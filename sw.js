@@ -3,7 +3,7 @@
  * Mendukung instalasi aplikasi standalone di handphone (Android/iOS)
  */
 
-const CACHE_NAME = "epokkita-cache-v2";
+const CACHE_NAME = "epokkita-cache-v3";
 const STATIC_ASSETS = [
   "/",
   "/index.html",

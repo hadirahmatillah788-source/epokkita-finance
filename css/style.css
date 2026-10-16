@@ -4013,3 +4013,90 @@ button, input, select, textarea {
   display: flex;
 }
 
+/* Defensive rule for any modal-backdrop */
+.modal-backdrop {
+  display: none !important;
+}
+
+/* ====================================================================
+   MOBILE BOTTOM NAVIGATION BAR (Sticky for Mobile & Tablet only)
+   ==================================================================== */
+.mobile-bottom-nav {
+  display: none !important; /* Strictly hidden on desktop */
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background-color: var(--bg-surface);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 999;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 0.5rem;
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    flex: 1;
+    max-width: 70px;
+  }
+
+  .bottom-nav-item i {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bottom-nav-item.active {
+    color: var(--primary-600);
+  }
+
+  .bottom-nav-action-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: #ffffff;
+    border: 3px solid var(--bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+    cursor: pointer;
+    margin-top: -18px;
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+  }
+
+  .bottom-nav-action-btn:active {
+    transform: scale(0.92);
+  }
+
+  .bottom-nav-action-btn i {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+
