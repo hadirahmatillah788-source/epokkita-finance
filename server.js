@@ -36,6 +36,7 @@ const MIME_TYPES = {
   ".css": "text/css",
   ".js": "application/javascript",
   ".json": "application/json",
+  ".webmanifest": "application/manifest+json",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -685,11 +686,16 @@ const server = http.createServer(async (req, res) => {
       const ext = path.extname(safePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || "application/octet-stream";
 
-      res.writeHead(200, {
+      const headers = {
         "Content-Type": contentType,
         "Cache-Control": "no-cache",
         "Access-Control-Allow-Origin": "*"
-      });
+      };
+      if (reqPath === "/sw.js") {
+        headers["Service-Worker-Allowed"] = "/";
+      }
+
+      res.writeHead(200, headers);
 
       const stream = fs.createReadStream(safePath);
       stream.pipe(res);

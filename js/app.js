@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     async init() {
       this.initTheme();
       this.bindAuthGate();
+      this.bindPwaInstallation();
       this.bindNavigation();
       this.bindUserSwitching();
       this.bindNotificationPanel();
@@ -92,6 +93,118 @@ document.addEventListener("DOMContentLoaded", async () => {
         this.updateActiveUserBadge();
         this.updateNotificationBadge();
         this.renderCurrentView();
+      });
+    },
+
+    // --- PWA INSTALLATION & SERVICE WORKER ---
+    deferredInstallPrompt: null,
+
+    bindPwaInstallation() {
+      // 1. Daftarkan Service Worker
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js")
+            .then(reg => {
+              console.log("[PWA] Service Worker berhasil didaftarkan:", reg.scope);
+            })
+            .catch(err => {
+              console.warn("[PWA] Service Worker gagal didaftarkan:", err);
+            });
+        });
+      }
+
+      const btnInstallHeader = document.getElementById("btnPwaInstall");
+      const banner = document.getElementById("pwaInstallBanner");
+      const btnBannerInstall = document.getElementById("btnPwaBannerInstall");
+      const btnBannerClose = document.getElementById("btnPwaBannerClose");
+      const iosModal = document.getElementById("pwaIosModal");
+      const closeIosModal = document.getElementById("closePwaIosModal");
+      const btnUnderstandIos = document.getElementById("btnUnderstandIos");
+
+      // Cek apakah sudah berjalan dalam mode standalone (aplikasi terinstal)
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      if (isStandalone) {
+        console.log("[PWA] Aplikasi berjalan dalam mode Standalone PWA.");
+        if (btnInstallHeader) btnInstallHeader.style.display = "none";
+        if (banner) banner.style.display = "none";
+        return;
+      }
+
+      // Deteksi iOS / iPadOS
+      const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+
+      // 2. Tangkap event beforeinstallprompt (Android / Chrome / Edge)
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        this.deferredInstallPrompt = e;
+
+        // Tampilkan tombol instal di header
+        if (btnInstallHeader) {
+          btnInstallHeader.style.display = "inline-flex";
+        }
+
+        // Tampilkan banner instal di handphone jika belum pernah ditutup sesi ini
+        const bannerDismissed = sessionStorage.getItem("epokkita_pwa_banner_dismissed");
+        if (banner && !bannerDismissed && window.innerWidth <= 768) {
+          banner.style.display = "flex";
+        }
+      });
+
+      // Jika di iOS, selalu sediakan tombol instalasi di header (karena Safari tidak ada beforeinstallprompt)
+      if (isIos && !isStandalone) {
+        if (btnInstallHeader) {
+          btnInstallHeader.style.display = "inline-flex";
+        }
+      }
+
+      // Handler aksi instalasi
+      const triggerInstall = async () => {
+        if (this.deferredInstallPrompt) {
+          this.deferredInstallPrompt.prompt();
+          const { outcome } = await this.deferredInstallPrompt.userChoice;
+          console.log("[PWA] Hasil instalasi pengguna:", outcome);
+          this.deferredInstallPrompt = null;
+          if (banner) banner.style.display = "none";
+          if (btnInstallHeader) btnInstallHeader.style.display = "none";
+        } else if (isIos) {
+          // Buka panduan instalasi iOS
+          if (iosModal) iosModal.classList.add("show");
+        } else {
+          // Fallback informasi instalasi
+          alert("Untuk menginstal di handphone:\n1. Buka menu browser (titik 3 di kanan atas)\n2. Pilih 'Instal Aplikasi' atau 'Tambahkan ke Layar Utama'\n\nAplikasi akan terpasang di HP Anda tanpa browser!");
+        }
+      };
+
+      if (btnInstallHeader) btnInstallHeader.addEventListener("click", triggerInstall);
+      if (btnBannerInstall) btnBannerInstall.addEventListener("click", triggerInstall);
+
+      if (btnBannerClose && banner) {
+        btnBannerClose.addEventListener("click", () => {
+          banner.style.display = "none";
+          sessionStorage.setItem("epokkita_pwa_banner_dismissed", "true");
+        });
+      }
+
+      if (closeIosModal && iosModal) {
+        closeIosModal.addEventListener("click", () => iosModal.classList.remove("show"));
+      }
+      if (btnUnderstandIos && iosModal) {
+        btnUnderstandIos.addEventListener("click", () => iosModal.classList.remove("show"));
+      }
+
+      // Event ketika aplikasi sukses terpasang
+      window.addEventListener("appinstalled", () => {
+        console.log("[PWA] EPOKKITA berhasil diinstal sebagai aplikasi standalone!");
+        if (banner) banner.style.display = "none";
+        if (btnInstallHeader) btnInstallHeader.style.display = "none";
+        this.deferredInstallPrompt = null;
+        window.dispatchEvent(new CustomEvent("epokkita-notification", {
+          detail: {
+            title: "🎉 Aplikasi Berhasil Dipasang!",
+            message: "EPOKKITA kini siap diakses langsung dari layar utama HP Anda.",
+            type: "info"
+          }
+        }));
       });
     },
 
@@ -414,7 +527,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const titleConfig = titles[viewName] || titles.dashboard;
       const pageTitleEl = document.getElementById("pageTitle");
       const pageDescEl = document.getElementById("pageDescription");
-      if (pageTitleEl) pageTitleEl.innerHTML = `<i data-lucide="sparkles" style="color: var(--primary-500); width: 22px; height: 22px;"></i> ${titleConfig.title}`;
+      if (pageTitleEl) pageTitleEl.innerHTML = `<img src="/assets/icon-192.png" class="header-brand-logo" alt="Logo"> ${titleConfig.title}`;
       if (pageDescEl) pageDescEl.textContent = titleConfig.desc;
 
       this.renderCurrentView();

@@ -2,10 +2,28 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EPOKKITA - Dashboard Keuangan Keluarga Modern</title>
-  <meta name="description" content="Dashboard keuangan keluarga modern untuk mengelola pemasukan, pengeluaran, pivot tabel, dan grafik perbandingan bulanan yang ramah keluarga.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>EPOKKITA - Dashboard Keuangan Keluarga</title>
+  <meta name="description" content="Aplikasi Dashboard Keuangan Keluarga Bahagia EPOKKITA untuk mengelola pemasukan, pengeluaran, pagu anggaran, dan catatan keuangan keluarga.">
   
+  <!-- Web App Manifest for PWA (Installable Standalone Mobile App) -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/assets/icon-512.png">
+
+  <!-- Standalone Mobile App Meta Tags (Android & iOS) -->
+  <meta name="theme-color" content="#0d1829">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EPOKKITA">
+  <meta name="application-name" content="EPOKKITA">
+
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,6 +46,9 @@
     <div class="auth-gate-backdrop"></div>
     <div class="auth-gate-container">
       <div class="auth-gate-header">
+        <div class="auth-gate-logo-wrapper">
+          <img src="/assets/icon-192.png" alt="Logo EPOKKITA" class="auth-gate-logo-img">
+        </div>
         <div class="auth-brand-badge">
           <i data-lucide="shield-check"></i>
           <span>Akses Privat Keluarga</span>
@@ -119,7 +140,7 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="brand-logo-icon">
-          <i data-lucide="wallet-cards"></i>
+          <img src="/assets/icon-192.png" alt="Logo EPOKKITA" class="brand-app-logo">
         </div>
         <div class="brand-text">
           <span class="brand-name">EPOKKITA</span>
@@ -193,7 +214,7 @@
             <i data-lucide="menu"></i>
           </button>
           <div class="page-title-group">
-            <h1 id="pageTitle"><i data-lucide="sparkles" style="color: var(--primary-500); width: 22px; height: 22px;"></i> Dashboard Keuangan</h1>
+            <h1 id="pageTitle"><img src="/assets/icon-192.png" class="header-brand-logo" alt="Logo"> Dashboard Keuangan</h1>
             <p id="pageDescription">Ringkasan kondisi finansial seluruh anggota keluarga</p>
           </div>
         </div>
@@ -232,6 +253,12 @@
           <!-- Lock / Logout Button -->
           <button class="icon-button btn-lock-dashboard" id="btnLockAppHeader" title="Kunci Dashboard (Keluar)" aria-label="Kunci Dashboard">
             <i data-lucide="lock"></i>
+          </button>
+
+          <!-- PWA In-App Install Button -->
+          <button class="btn-pwa-install" id="btnPwaInstall" title="Pasang Aplikasi EPOKKITA di HP" aria-label="Instal Aplikasi" style="display: none;">
+            <i data-lucide="download"></i>
+            <span>Instal App</span>
           </button>
 
           <!-- Primary CTA: Add Transaction -->
@@ -1125,6 +1152,70 @@
       <span>Keluarga</span>
     </button>
   </nav>
+
+  <!-- ====================================================================
+       PWA MOBILE INSTALL BANNER & IOS GUIDE MODAL
+       ==================================================================== -->
+  <!-- Floating In-App PWA Install Banner for Mobile Phones -->
+  <div id="pwaInstallBanner" class="pwa-install-banner" style="display: none;">
+    <div class="pwa-banner-content">
+      <img src="/assets/icon-192.png" alt="EPOKKITA" class="pwa-banner-icon">
+      <div class="pwa-banner-text">
+        <strong>Instal Aplikasi EPOKKITA</strong>
+        <span>Pasang langsung di HP Anda (Bebas browser)</span>
+      </div>
+    </div>
+    <div class="pwa-banner-actions">
+      <button type="button" class="btn-pwa-banner-install" id="btnPwaBannerInstall">
+        <i data-lucide="download"></i>
+        <span>Pasang</span>
+      </button>
+      <button type="button" class="btn-pwa-banner-close" id="btnPwaBannerClose" aria-label="Tutup">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Panduan Instalasi iOS iPhone / iPad -->
+  <div id="pwaIosModal" class="modal-backdrop">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <img src="/assets/icon-192.png" style="width: 30px; height: 30px; border-radius: 7px;" alt="Logo">
+          <h3>Pasang di iPhone / iPad</h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="closePwaIosModal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.25rem;">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+          Anda dapat memasang <strong>EPOKKITA</strong> sebagai aplikasi mandiri di layar utama iPhone Anda tanpa melalui browser:
+        </p>
+        <div class="ios-install-steps">
+          <div class="ios-step-item">
+            <div class="ios-step-num">1</div>
+            <div class="ios-step-text">
+              Buka website ini di <strong>Safari</strong>, lalu ketuk tombol <strong>Bagikan / Share</strong> di bilah bawah (ikon <i data-lucide="share" style="width: 16px; height: 16px; vertical-align: middle; display: inline;"></i>).
+            </div>
+          </div>
+          <div class="ios-step-item">
+            <div class="ios-step-num">2</div>
+            <div class="ios-step-text">
+              Gulir ke bawah dan pilih menu <strong>"Tambah ke Layar Utama" (Add to Home Screen <i data-lucide="plus-square" style="width: 16px; height: 16px; vertical-align: middle; display: inline;"></i>)</strong>.
+            </div>
+          </div>
+          <div class="ios-step-item">
+            <div class="ios-step-num">3</div>
+            <div class="ios-step-text">
+              Ketuk <strong>"Tambah"</strong> di kanan atas. Logo EPOKKITA akan muncul di layar utama HP Anda sebagai aplikasi asli!
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" id="btnUnderstandIos" style="width: 100%;">Saya Mengerti 👍</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ====================================================================
        LIVE TOAST CONTAINER (NOTIFICATIONS POPUP)
