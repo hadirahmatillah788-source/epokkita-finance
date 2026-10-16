@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPOKKITA - Dashboard Keuangan Keluarga Modern</title>
+  <meta name="description" content="Dashboard keuangan keluarga modern untuk mengelola pemasukan, pengeluaran, pivot tabel, dan grafik perbandingan bulanan yang ramah keluarga.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- ====================================================================
+         Sidebar Navigation
+         ==================================================================== -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo-icon">
+          <i data-lucide="wallet-cards"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">EPOKKITA</span>
+          <span class="brand-tagline">Keuangan Keluarga Bahagia</span>
+        </div>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Tutup Menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Menu Utama</div>
+        <a class="nav-item active" data-nav-target="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a class="nav-item" data-nav-target="transactions">
+          <i data-lucide="receipt"></i>
+          <span>Transaksi</span>
+          <span class="nav-badge" id="navTxCountBadge">Live</span>
+        </a>
+        <a class="nav-item" data-nav-target="pivot">
+          <i data-lucide="table-2"></i>
+          <span>Pivot Table</span>
+        </a>
+        <a class="nav-item" data-nav-target="analytics">
+          <i data-lucide="line-chart"></i>
+          <span>Grafik & Analisis</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 0.5rem;">Pengaturan Keluarga</div>
+        <a class="nav-item" data-nav-target="family">
+          <i data-lucide="users"></i>
+          <span>Anggota Keluarga</span>
+        </a>
+        <a class="nav-item" data-nav-target="budget">
+          <i data-lucide="pie-chart"></i>
+          <span>Pagu & Anggaran</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="active-user-card" id="sidebarActiveUserCard" title="Klik untuk berganti akun anggota keluarga">
+          <div class="user-avatar avatar-ayah" id="sidebarUserAvatar">
+            B<span class="user-status-dot"></span>
+          </div>
+          <div class="user-details">
+            <div class="user-name" id="sidebarUserName">Ayah Budi</div>
+            <div class="user-role-badge" id="sidebarUserRole">Kepala Keluarga</div>
+          </div>
+          <button class="switch-user-btn" title="Ganti Pengguna">
+            <i data-lucide="arrow-left-right" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- ====================================================================
+         Main Application Wrapper
+         ==================================================================== -->
+    <div class="main-wrapper">
+      <!-- Top Sticky App Bar -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="page-title-group">
+            <h1 id="pageTitle"><i data-lucide="sparkles" style="color: var(--primary-500); width: 22px; height: 22px;"></i> Dashboard Keuangan</h1>
+            <p id="pageDescription">Ringkasan kondisi finansial seluruh anggota keluarga</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- PostgreSQL Database Status Badge -->
+          <div class="db-status-badge" id="dbStatusBadge" title="Database PostgreSQL aktif dan tersambung">
+            <span class="db-pulse-dot"></span>
+            <i data-lucide="database"></i>
+            <span>PostgreSQL: epokkita_db</span>
+          </div>
+
+          <!-- Notification Bell Dropdown -->
+          <div class="notif-dropdown-wrapper">
+            <button class="icon-button" id="notificationBtn" aria-label="Notifikasi">
+              <i data-lucide="bell"></i>
+              <span class="notif-badge-count" id="notifBadgeCount" style="display: none;">0</span>
+            </button>
+
+            <div class="notif-dropdown-panel" id="notificationPanel">
+              <div class="notif-panel-header">
+                <h4>Notifikasi Aktivitas</h4>
+                <button class="notif-clear-btn" id="clearNotifsBtn">Bersihkan Semua</button>
+              </div>
+              <div class="notif-list-container" id="notificationListContainer">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button class="icon-button" id="themeToggleBtn" title="Ganti Tema Gelap/Terang" aria-label="Toggle Theme">
+            <i data-lucide="moon"></i>
+          </button>
+
+          <!-- Primary CTA: Add Transaction -->
+          <button class="btn-primary" id="btnOpenAddTxModal">
+            <i data-lucide="plus-circle"></i>
+            <span>Catat Transaksi</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Scrollable Content Body -->
+      <main class="content-body">
+        
+        <!-- ================================================================
+             VIEW 1: DASHBOARD (BERANDA)
+             ================================================================ -->
+        <section id="view-dashboard" class="app-view active">
+          <!-- Welcome Family Greeting Banner -->
+          <div class="welcome-banner">
+            <div class="welcome-text">
+              <h2 id="bannerUserName">Halo, Ayah Budi! 👋</h2>
+              <p><i data-lucide="shield-check" style="width: 18px; height: 18px;"></i> Keuangan keluarga bulan ini dalam kondisi: <strong>Sehat & Terkendali</strong></p>
+            </div>
+            <div class="banner-stats-pill">
+              <div class="pill-item">
+                <div class="pill-label">Rasio Tabungan</div>
+                <div class="pill-value">48.2%</div>
+              </div>
+              <div style="width: 1px; height: 32px; background: rgba(255,255,255,0.2);"></div>
+              <div class="pill-item">
+                <div class="pill-label">Target Bulan Ini</div>
+                <div class="pill-value">Rp 20 Jt</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 KPI Summary Cards -->
+          <div class="kpi-grid">
+            <!-- Card 1: Total Saldo Kas -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Total Saldo Kas Keluarga</span>
+                <div class="kpi-icon-wrap kpi-icon-balance">
+                  <i data-lucide="wallet"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpiTotalBalance">Rp 0</div>
+              <div class="kpi-footer">
+                <span class="trend-badge up"><i data-lucide="check-circle-2"></i> Akumulasi</span>
+                <span class="trend-desc">Dana siap pakai keluarga</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Pemasukan Bulan Berjalan -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Pemasukan Bulan Ini</span>
+                <div class="kpi-icon-wrap kpi-icon-income">
+                  <i data-lucide="arrow-down-left"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpiCurrentIncome">Rp 0</div>
+              <div class="kpi-footer">
+                <span class="trend-badge up" id="kpiIncomeTrendBadge"><i data-lucide="trending-up"></i> +12%</span>
+                <span class="trend-desc">vs bulan lalu</span>
+              </div>
+            </div>
+
+            <!-- Card 3: Pengeluaran Bulan Berjalan -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Pengeluaran Bulan Ini</span>
+                <div class="kpi-icon-wrap kpi-icon-expense">
+                  <i data-lucide="arrow-up-right"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpiCurrentExpense">Rp 0</div>
+              <div class="kpi-footer">
+                <span class="trend-badge down" id="kpiExpenseTrendBadge"><i data-lucide="trending-down"></i> -4%</span>
+                <span class="trend-desc">efisiensi belanja</span>
+              </div>
+            </div>
+
+            <!-- Card 4: Sisa Anggaran Bulanan -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Sisa Anggaran Bulanan</span>
+                <div class="kpi-icon-wrap kpi-icon-budget">
+                  <i data-lucide="piggy-bank"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpiBudgetLeft">Rp 0</div>
+              <div class="budget-progress-bar">
+                <div class="budget-fill" id="kpiBudgetFill" style="width: 45%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Visual Charts Row -->
+          <div class="charts-grid-2col">
+            <!-- Left Chart: Monthly Comparison -->
+            <div class="card-widget">
+              <div class="widget-header">
+                <div class="widget-title-group">
+                  <h3>Perbandingan Pengeluaran & Pemasukan Bulanan</h3>
+                  <p>Membandingkan arus masuk dan keluar setiap bulan (Jul - Okt 2026)</p>
+                </div>
+                <div class="widget-tools">
+                  <span class="trend-badge up"><i data-lucide="bar-chart-2"></i> Real-time</span>
+                </div>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="chartMonthlyComp"></canvas>
+              </div>
+            </div>
+
+            <!-- Right Chart: Category Distribution -->
+            <div class="card-widget">
+              <div class="widget-header">
+                <div class="widget-title-group">
+                  <h3>Distribusi Pengeluaran</h3>
+                  <p>Alokasi belanja berdasarkan kategori kebutuhan</p>
+                </div>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="chartCategoryDonut"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split Row: Recent Transactions & Family Spending -->
+          <div class="split-grid-row">
+            <!-- Left: Recent Transactions -->
+            <div class="card-widget">
+              <div class="widget-header">
+                <div class="widget-title-group">
+                  <h3>Transaksi Terkini</h3>
+                  <p>Aktivitas pencatatan keuangan terbaru dari seluruh anggota</p>
+                </div>
+                <button class="btn-secondary btn-sm" onclick="window.epokApp.switchView('transactions')">
+                  Lihat Semua
+                </button>
+              </div>
+              <div class="transaction-list" id="recentTransactionsList">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Right: Family Member Spending Breakdown -->
+            <div class="card-widget">
+              <div class="widget-header">
+                <div class="widget-title-group">
+                  <h3>Pengeluaran per Anggota</h3>
+                  <p>Beban belanja keluarga bulan ini</p>
+                </div>
+                <button class="btn-secondary btn-sm" onclick="window.epokApp.switchView('family')">
+                  Kelola
+                </button>
+              </div>
+              <div class="family-member-list" id="memberSpendingWidget">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 2: TRANSAKSI (FULL TRANSACTION MANAGER)
+             ================================================================ -->
+        <section id="view-transactions" class="app-view">
+          <!-- Unified Filter & Action Toolbar -->
+          <div class="tx-toolbar-card">
+            <!-- Top Controls Row: Search & Filters & Action Buttons -->
+            <div class="tx-toolbar-main">
+              <!-- Search Input -->
+              <div class="search-input-wrap">
+                <i data-lucide="search"></i>
+                <input type="text" id="txSearchInput" placeholder="Cari keterangan, kategori, atau nama...">
+              </div>
+
+              <!-- Quick Dropdowns Filter Group -->
+              <div class="tx-dropdowns-group">
+                <select class="select-custom" id="txTypeFilter" title="Filter Jenis Transaksi">
+                  <option value="all">Semua Jenis</option>
+                  <option value="expense">Pengeluaran</option>
+                  <option value="income">Pemasukan</option>
+                </select>
+
+                <select class="select-custom" id="txMemberFilter" title="Filter Anggota Keluarga">
+                  <!-- Populated via JS -->
+                </select>
+
+                <select class="select-custom" id="txCategoryFilter" title="Filter Kategori">
+                  <!-- Populated via JS -->
+                </select>
+
+                <select class="select-custom" id="txMonthFilter" style="display:none;">
+                  <option value="all">📅 Semua Bulan</option>
+                </select>
+              </div>
+
+              <!-- Right-aligned Action Buttons -->
+              <div class="tx-actions-right">
+                <button class="btn-secondary btn-sm" id="exportTxCsvBtn" title="Unduh laporan dalam format CSV">
+                  <i data-lucide="download"></i> <span>Ekspor CSV</span>
+                </button>
+                <button class="btn-danger-subtle btn-sm" id="btnResetAllTx" style="display:none;" title="Fitur Kepala Keluarga: Hapus seluruh riwayat transaksi dari database">
+                  <i data-lucide="trash-2"></i> <span>Hapus Semua Transaksi</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Month Quick Filter Bar -->
+            <div class="tx-month-bar-wrap">
+              <span class="tx-month-bar-label">
+                <i data-lucide="calendar"></i> Periode Bulan:
+              </span>
+              <div class="month-pill-bar" id="txMonthPillBar">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Financial Summary Chips Bar -->
+          <div class="tx-summary-banner" id="txFilteredSummary">
+            <!-- Injected via JS as rich metric chips -->
+          </div>
+
+          <!-- Transaction Table -->
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 130px;">Tanggal</th>
+                  <th>Keterangan</th>
+                  <th style="width: 170px;">Kategori</th>
+                  <th style="width: 150px;">Dicatat Oleh</th>
+                  <th style="width: 125px;">Jenis</th>
+                  <th style="text-align: right; width: 175px;">Jumlah</th>
+                  <th style="text-align: center; width: 80px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="allTransactionsTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 3: PIVOT TABLE (TABEL PIVOT MULTIDIMENSI)
+             ================================================================ -->
+        <section id="view-pivot" class="app-view">
+          <div class="pivot-controls-panel">
+            <div class="pivot-selectors-grid">
+              <div class="pivot-field-group">
+                <label><i data-lucide="rows" style="width:14px;height:14px;"></i> Dimensi Baris (Row)</label>
+                <select class="pivot-select" id="pivotRowField">
+                  <option value="categoryName" selected>Kategori Kebutuhan</option>
+                  <option value="memberName">Anggota Keluarga</option>
+                  <option value="paymentMethod">Metode Pembayaran</option>
+                  <option value="type">Tipe Transaksi</option>
+                </select>
+              </div>
+
+              <div class="pivot-field-group">
+                <label><i data-lucide="columns" style="width:14px;height:14px;"></i> Dimensi Kolom (Column)</label>
+                <select class="pivot-select" id="pivotColField">
+                  <option value="month" selected>Bulan Transaksi (YYYY-MM)</option>
+                  <option value="type">Tipe (Pemasukan / Pengeluaran)</option>
+                  <option value="paymentMethod">Metode Pembayaran</option>
+                </select>
+              </div>
+
+              <div class="pivot-field-group">
+                <label><i data-lucide="calculator" style="width:14px;height:14px;"></i> Agregasi Nilai</label>
+                <select class="pivot-select" id="pivotAggType">
+                  <option value="sum" selected>Total Jumlah (Sum IDR)</option>
+                  <option value="avg">Rata-rata Nilai (Average)</option>
+                  <option value="count">Frekuensi Transaksi (Count)</option>
+                </select>
+              </div>
+
+              <div class="pivot-field-group">
+                <label><i data-lucide="filter" style="width:14px;height:14px;"></i> Filter Jenis</label>
+                <select class="pivot-select" id="pivotFilterType">
+                  <option value="expense" selected>Hanya Pengeluaran</option>
+                  <option value="income">Hanya Pemasukan</option>
+                  <option value="all">Semua Transaksi</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="pivot-summary-badges">
+              <div id="pivotSummaryInfo">Menganalisis data transaksi...</div>
+              <button class="btn-secondary btn-sm" id="exportPivotCsvBtn" style="margin-left:auto;">
+                <i data-lucide="file-spreadsheet"></i> Ekspor Tabel Pivot (.CSV)
+              </button>
+            </div>
+          </div>
+
+          <!-- Pivot Table Render Container -->
+          <div class="pivot-table-container" id="pivotTableOutputContainer">
+            <!-- Injected dynamically via PivotEngine -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 4: GRAFIK & ANALISIS (MONTHLY COMPARISONS & TRENDS)
+             ================================================================ -->
+        <section id="view-analytics" class="app-view">
+          <div class="charts-grid-2col">
+            <!-- Line Chart: Cashflow & Tabungan -->
+            <div class="card-widget">
+              <div class="widget-header">
+                <div class="widget-title-group">
+                  <h3>Tren Akumulasi Tabungan Kas Keluarga</h3>
+                  <p>Pertumbuhan saldo bersih kumulatif dari bulan ke bulan</p>
+                </div>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="chartCashflowTrend"></canvas>
+              </div>
+            </div>
+
+            <!-- Member Spending Horizontal Bar -->
+            <div class="card-widget">
+              <div class="widget-header">
+                <div class="widget-title-group">
+                  <h3>Pola Belanja Anggota Keluarga</h3>
+                  <p>Perbandingan total pengeluaran tiap anggota</p>
+                </div>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="chartMemberSpendingBar"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly Deep-Dive Comparison Table -->
+          <div class="card-widget" style="margin-top: 1.5rem;">
+            <div class="widget-header">
+              <div class="widget-title-group">
+                <h3>Tabel Evaluasi Keuangan Antar Bulan</h3>
+                <p>Membandingkan rasio tabungan, defisit/surplus, dan performa finansial</p>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Bulan / Periode</th>
+                    <th>Total Pemasukan</th>
+                    <th>Total Pengeluaran</th>
+                    <th>Surplus Kas Bersih</th>
+                    <th>Rasio Tabungan</th>
+                    <th>Status Kesehatan</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlyComparisonTableBody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 5: ANGGOTA KELUARGA (USER MANAGEMENT & AUDIT)
+             ================================================================ -->
+        <section id="view-family" class="app-view">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h3 style="font-size:1.15rem; font-weight:800;">Daftar Anggota Keluarga Terdaftar</h3>
+              <p style="font-size:0.8rem; color:var(--text-secondary);">Dikelola langsung oleh Kepala Keluarga & Bendahara (Tersinkronisasi PostgreSQL)</p>
+            </div>
+            <div style="display:flex; gap:0.6rem; align-items:center;">
+              <button class="btn-secondary btn-sm" id="btnOpenChangePinModal" title="Ubah PIN login keamanan">
+                <i data-lucide="key-round"></i> Ubah PIN Login
+              </button>
+              <button class="btn-primary btn-sm" id="btnOpenAddMemberModal">
+                <i data-lucide="user-plus"></i> Tambah Anggota
+              </button>
+            </div>
+          </div>
+
+          <div class="family-cards-grid" id="familyMembersGrid">
+            <!-- Injected via JS -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 6: PAGU & ANGGARAN (BUDGET TRACKER & MANAGEMENT)
+             ================================================================ -->
+        <section id="view-budget" class="app-view">
+          <!-- Budget Header Banner with Settings Button -->
+          <div class="budget-header-card">
+            <div class="budget-header-info">
+              <div class="budget-badge-pill">
+                <i data-lucide="shield-check"></i>
+                <span>Disiplin Anggaran Keluarga</span>
+              </div>
+              <h3>Pagu & Anggaran Keuangan Keluarga</h3>
+              <p>Kendali penuh batas belanja bulanan per pos kebutuhan dan kuota belanja tiap anggota keluarga, tersimpan langsung di database PostgreSQL.</p>
+            </div>
+            <div class="budget-header-actions">
+              <button type="button" class="btn-primary" id="btnOpenSetBudgetModal" onclick="window.epokApp.openSetBudgetModal()">
+                <i data-lucide="sliders-horizontal"></i>
+                <span>Atur Pagu & Anggaran</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Overview KPI Cards for Budget Tracker -->
+          <div class="kpi-grid" style="margin-bottom: 1.75rem;">
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Total Plafon Anggaran</span>
+                <div class="kpi-icon-wrap kpi-icon-income">
+                  <i data-lucide="wallet"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpiBudgetTotalPlafon">Rp 0</div>
+              <div class="kpi-footer">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Akumulasi pagu seluruh kategori</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Realisasi Belanja Bulan Ini</span>
+                <div class="kpi-icon-wrap kpi-icon-expense">
+                  <i data-lucide="shopping-cart"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpiBudgetSpentThisMonth">Rp 0</div>
+              <div class="kpi-footer">
+                <span id="kpiBudgetSpentPctBadge" class="trend-badge down">0% Terpakai</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Sisa Kuota Belanja Aman</span>
+                <div class="kpi-icon-wrap kpi-icon-balance">
+                  <i data-lucide="check-circle-2"></i>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpiBudgetRemaining">Rp 0</div>
+              <div class="kpi-footer">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Plafon yang masih boleh dibelanjakan</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Status Disiplin Kas</span>
+                <div class="kpi-icon-wrap kpi-icon-budget" id="kpiBudgetStatusIcon">
+                  <i data-lucide="sparkles"></i>
+                </div>
+              </div>
+              <div class="kpi-value" style="font-size: 1.2rem;" id="kpiBudgetStatusText">Terkendali</div>
+              <div class="kpi-footer">
+                <span id="kpiBudgetStatusDesc" style="font-size: 0.75rem; color: var(--text-muted);">Semua pos dalam batas wajar</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: Alokasi Pagu per Kategori Kebutuhan -->
+          <div class="budget-section-card">
+            <div class="budget-section-header">
+              <div>
+                <h4 class="budget-section-title">
+                  <i data-lucide="layers" style="color: var(--primary-600); width: 18px; height: 18px;"></i>
+                  Alokasi Pagu per Kategori Belanja
+                </h4>
+                <p class="budget-section-subtitle">
+                  Batas pengeluaran bulanan yang dialokasikan untuk setiap pos kebutuhan keluarga.
+                </p>
+              </div>
+              <button type="button" class="btn-secondary btn-sm" onclick="window.epokApp.openSetBudgetModal('category')">
+                <i data-lucide="plus-circle"></i> Ubah Pagu Kategori
+              </button>
+            </div>
+            <div id="categoryBudgetList" class="category-budget-grid">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <!-- Section 2: Batas Pagu Belanja Anggota Keluarga -->
+          <div class="budget-section-card" style="margin-top: 1.5rem;">
+            <div class="budget-section-header">
+              <div>
+                <h4 class="budget-section-title">
+                  <i data-lucide="users" style="color: var(--primary-600); width: 18px; height: 18px;"></i>
+                  Pagu Batas Belanja Bulanan per Anggota Keluarga
+                </h4>
+                <p class="budget-section-subtitle">
+                  Plafon batas belanja masing-masing anggota (Ayah, Mama, Anak, dll) untuk mendidik kedisiplinan keuangan.
+                </p>
+              </div>
+              <button type="button" class="btn-secondary btn-sm" onclick="window.epokApp.openSetBudgetModal('member')">
+                <i data-lucide="user-check"></i> Atur Limit Anggota
+              </button>
+            </div>
+            <div id="memberBudgetList" class="member-budget-grid">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 1: CATAT TRANSAKSI BARU (PEMASUKAN / PENGELUARAN)
+       ==================================================================== -->
+  <div class="modal-overlay" id="transactionModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i data-lucide="plus-circle" style="color:var(--primary-600);"></i> Catat Transaksi Baru</h3>
+        <button class="modal-close-btn" id="closeTxModal">&times;</button>
+      </div>
+
+      <form id="transactionForm">
+        <div class="modal-body">
+          <!-- Toggle Income vs Expense -->
+          <div class="type-toggle-group">
+            <button type="button" class="type-toggle-btn active expense" id="txTypeToggleExpense">
+              <i data-lucide="arrow-up-right"></i> Pengeluaran
+            </button>
+            <button type="button" class="type-toggle-btn" id="txTypeToggleIncome">
+              <i data-lucide="arrow-down-left"></i> Pemasukan
+            </button>
+          </div>
+          <input type="hidden" id="txTypeInput" value="expense">
+
+          <!-- Nominal -->
+          <div class="form-group">
+            <label for="txAmountInput">Nominal Transaksi (Rp)</label>
+            <input type="number" class="form-control" id="txAmountInput" placeholder="Contoh: 150000" min="1000" required autofocus>
+          </div>
+
+          <!-- Keterangan -->
+          <div class="form-group">
+            <label for="txDescInput">Keterangan / Deskripsi</label>
+            <input type="text" class="form-control" id="txDescInput" placeholder="Contoh: Belanja Sayur & Buah Segar" required>
+          </div>
+
+          <div class="form-row">
+            <!-- Kategori -->
+            <div class="form-group">
+              <label for="txCategorySelect">Kategori Kebutuhan</label>
+              <select class="form-control" id="txCategorySelect">
+                <!-- Populated dynamically based on type -->
+              </select>
+            </div>
+
+            <!-- Tanggal -->
+            <div class="form-group">
+              <label for="txDateInput">Tanggal Transaksi</label>
+              <input type="date" class="form-control" id="txDateInput" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Anggota yang mencatat -->
+            <div class="form-group">
+              <label for="txMemberSelect">Dicatat Oleh</label>
+              <select class="form-control" id="txMemberSelect">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+
+            <!-- Metode Pembayaran -->
+            <div class="form-group">
+              <label for="txPaymentSelect">Metode Pembayaran</label>
+              <select class="form-control" id="txPaymentSelect">
+                <option value="Transfer">Transfer</option>
+                <option value="QRIS">QRIS</option>
+                <option value="Tunai (Cash)">Tunai (Cash)</option>
+                <option value="E-Wallet">E-Wallet</option>
+                <option value="Kartu Debit/Kredit">Kartu Debit/Kredit</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Anti-Double Input / Duplicate Warning Box -->
+          <div id="txDuplicateWarningBox" class="duplicate-warning-banner" style="display: none;">
+            <div class="duplicate-warning-header">
+              <i data-lucide="alert-triangle"></i>
+              <span>Peringatan Potensi Transaksi Ganda</span>
+            </div>
+            <p id="txDuplicateWarningMsg">
+              Transaksi serupa dengan nominal dan keterangan ini sudah pernah dicatat. Apakah Anda tidak sengaja mengklik dua kali?
+            </p>
+            <div class="duplicate-warning-actions">
+              <button type="button" class="btn-warning-action" id="btnForceSubmitTx">
+                <i data-lucide="check-circle-2"></i> Tetap Simpan Transaksi Ini
+              </button>
+              <button type="button" class="btn-secondary btn-sm" id="btnCancelDuplicateTx">
+                Batal & Periksa Kembali
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('transactionModal').classList.remove('show')">Batal</button>
+          <button type="submit" class="btn-primary" id="btnSubmitTx">
+            <i data-lucide="check"></i> <span id="btnSubmitTxText">Simpan Transaksi</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 2: GANTI PENGGUNA / LOGIN PROFILE
+       ==================================================================== -->
+  <div class="modal-overlay" id="userSwitchModal">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3><i data-lucide="users" style="color:var(--primary-600);"></i> Ganti Profil Pengguna</h3>
+        <button class="modal-close-btn" id="closeUserSwitchModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Pilih profil Anda untuk memastikan pencatatan transaksi teridentifikasi sesuai anggota keluarga:
+        </p>
+        <div class="user-switch-list" id="userSwitchOptionsList">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 3: EDIT DATA ANGGOTA KELUARGA & JABATAN ANAK
+       ==================================================================== -->
+  <div class="modal-overlay" id="editMemberModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i data-lucide="user-cog" style="color:var(--primary-600);"></i> Edit Anggota & Jabatan</h3>
+        <button class="modal-close-btn" id="closeEditMemberModal">&times;</button>
+      </div>
+      <form id="editMemberForm">
+        <div class="modal-body">
+          <input type="hidden" id="editMemberId">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editMemberName">Nama Panggilan</label>
+              <input type="text" class="form-control" id="editMemberName" required placeholder="Contoh: Kakak Rian">
+            </div>
+            <div class="form-group">
+              <label for="editMemberFullName">Nama Lengkap</label>
+              <input type="text" class="form-control" id="editMemberFullName" placeholder="Contoh: Rian Pratama Santoso">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="editMemberRoleTitle">Jabatan / Posisi dalam Keluarga</label>
+            <input type="text" class="form-control" id="editMemberRoleTitle" required placeholder="Contoh: Anak Pertama (Kuliah), Anak Bungsu (SMP), dll.">
+            <small style="color:var(--text-muted); font-size:0.75rem;">Ganti jabatan untuk anak atau anggota keluarga sesuai jenjang pendidikan atau peran.</small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editMemberRole">Peran Sistem (Akses)</label>
+              <select class="form-control" id="editMemberRole">
+                <option value="member">Anggota (Catat & Pantau)</option>
+                <option value="co-admin">Bendahara (Akses Penuh Manajemen)</option>
+                <option value="admin">Kepala Keluarga (Akses Utama)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editMemberMonthlyLimit">Pagu Batas Belanja (Rp/Bulan)</label>
+              <input type="number" class="form-control" id="editMemberMonthlyLimit" min="0" step="50000" placeholder="Contoh: 3000000">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('editMemberModal').classList.remove('show')">Batal</button>
+          <button type="submit" class="btn-primary">
+            <i data-lucide="save"></i> Simpan ke Database PostgreSQL
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 4: UBAH PIN LOGIN KEPALA KELUARGA & BENDAHARA
+       ==================================================================== -->
+  <div class="modal-overlay" id="pinChangeModal">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3><i data-lucide="shield-alert" style="color:var(--accent-amber);"></i> Ubah PIN Login Keamanan</h3>
+        <button class="modal-close-btn" id="closePinChangeModal">&times;</button>
+      </div>
+      <form id="pinChangeForm">
+        <div class="modal-body">
+          <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:1.2rem;">
+            PIN digunakan untuk mengamankan akses manajemen Kepala Keluarga dan Bendahara.
+          </p>
+          <div class="form-group">
+            <label for="pinTargetMemberSelect">Pilih Akun yang Diubah</label>
+            <select class="form-control" id="pinTargetMemberSelect">
+              <!-- Populated via JS (Kepala Keluarga & Bendahara) -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="pinCurrentInput">PIN Lama Saat Ini</label>
+            <input type="password" class="form-control" id="pinCurrentInput" placeholder="Masukkan PIN lama (default: 1234 atau 1111)" required maxlength="8">
+          </div>
+          <div class="form-group">
+            <label for="pinNewInput">PIN Baru (Minimal 4 Angka)</label>
+            <input type="password" class="form-control" id="pinNewInput" placeholder="Masukkan 4-8 digit PIN baru" required minlength="4" maxlength="8">
+          </div>
+          <div class="form-group">
+            <label for="pinConfirmInput">Konfirmasi PIN Baru</label>
+            <input type="password" class="form-control" id="pinConfirmInput" placeholder="Ulangi PIN baru" required minlength="4" maxlength="8">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('pinChangeModal').classList.remove('show')">Batal</button>
+          <button type="submit" class="btn-primary">
+            <i data-lucide="check"></i> Simpan PIN Baru
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 5: TAMBAH ANGGOTA KELUARGA BARU
+       ==================================================================== -->
+  <div class="modal-overlay" id="addMemberModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i data-lucide="user-plus" style="color:var(--primary-600);"></i> Tambah Anggota Keluarga Baru</h3>
+        <button class="modal-close-btn" id="closeAddMemberModal">&times;</button>
+      </div>
+      <form id="addMemberForm">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="newMemberName">Nama Panggilan</label>
+              <input type="text" class="form-control" id="newMemberName" required placeholder="Contoh: Adik Fajar">
+            </div>
+            <div class="form-group">
+              <label for="newMemberFullName">Nama Lengkap</label>
+              <input type="text" class="form-control" id="newMemberFullName" placeholder="Contoh: Fajar Ramadhan">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="newMemberRoleTitle">Jabatan / Posisi dalam Keluarga</label>
+            <input type="text" class="form-control" id="newMemberRoleTitle" required placeholder="Contoh: Anak Ketiga (SD), Nenek, dll.">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="newMemberRole">Peran Sistem</label>
+              <select class="form-control" id="newMemberRole">
+                <option value="member" selected>Anggota (Biasa)</option>
+                <option value="co-admin">Bendahara (Hak Akses Penuh)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="newMemberLimit">Pagu Batas Belanja Bulanan (Rp)</label>
+              <input type="number" class="form-control" id="newMemberLimit" value="1500000" min="0" step="50000">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('addMemberModal').classList.remove('show')">Batal</button>
+          <button type="submit" class="btn-primary">
+            <i data-lucide="user-check"></i> Daftarkan ke Database
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 5: ATUR PAGU & ANGGARAN (KATEGORI & ANGGOTA KELUARGA)
+       ==================================================================== -->
+  <div class="modal-overlay" id="setBudgetModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i data-lucide="sliders-horizontal" style="color:var(--primary-600);"></i> Atur Pagu & Batas Anggaran</h3>
+        <button class="modal-close-btn" id="closeSetBudgetModal" type="button" onclick="document.getElementById('setBudgetModal').classList.remove('show')">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="setBudgetForm">
+        <div class="modal-body">
+          <div class="setting-auth-notice">
+            <i data-lucide="shield-alert" class="setting-auth-icon"></i>
+            <span>
+              Pengaturan pagu dikelola oleh <strong>Kepala Keluarga</strong> atau <strong>Bendahara</strong> dan langsung disimpan permanen ke database PostgreSQL.
+            </span>
+          </div>
+
+          <!-- Type Selector: Category vs Member -->
+          <div class="form-group">
+            <label style="font-weight: 700; margin-bottom: 0.5rem; display:block;">Pilih Jenis Batasan yang Ingin Diatur:</label>
+            <div class="budget-type-toggle-group">
+              <button type="button" class="budget-type-btn active" id="btnToggleTypeCategory" onclick="window.epokApp.setBudgetTypeModal('category')">
+                <i data-lucide="layers"></i> Pagu Pos Belanja
+              </button>
+              <button type="button" class="budget-type-btn" id="btnToggleTypeMember" onclick="window.epokApp.setBudgetTypeModal('member')">
+                <i data-lucide="users"></i> Pagu Belanja Anggota
+              </button>
+            </div>
+            <input type="hidden" id="budgetTargetType" value="category">
+          </div>
+
+          <!-- Target Dropdown: Category List or Member List -->
+          <div class="form-group" id="budgetTargetSelectGroup">
+            <label for="budgetSubjectSelect" id="budgetSubjectLabel">Pilih Kategori Belanja:</label>
+            <select class="form-control" id="budgetSubjectSelect" required>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <!-- Current Limit Info Banner -->
+          <div class="current-budget-info-banner" id="currentBudgetInfoBanner">
+            <span>Pagu saat ini di database:</span>
+            <strong id="currentBudgetValLabel">Rp 0</strong>
+          </div>
+
+          <!-- Nominal Budget Input -->
+          <div class="form-group">
+            <label for="newBudgetAmountInput">Batas Pagu Baru (Rp)</label>
+            <input type="number" class="form-control" id="newBudgetAmountInput" required min="0" step="50000" placeholder="Contoh: 3500000">
+            <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
+              Tentukan batas maksimal alokasi belanja per bulan. Masukkan 0 jika tidak ada kuota.
+            </small>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="form-group">
+            <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; display: block; font-weight: 600;">Preset Cepat Nominal:</label>
+            <div class="budget-preset-bar">
+              <button type="button" class="btn-preset-pill" onclick="window.epokApp.setBudgetAmountPreset(500000)">500 Rb</button>
+              <button type="button" class="btn-preset-pill" onclick="window.epokApp.setBudgetAmountPreset(1000000)">1 Jt</button>
+              <button type="button" class="btn-preset-pill" onclick="window.epokApp.setBudgetAmountPreset(2000000)">2 Jt</button>
+              <button type="button" class="btn-preset-pill" onclick="window.epokApp.setBudgetAmountPreset(3500000)">3.5 Jt</button>
+              <button type="button" class="btn-preset-pill" onclick="window.epokApp.setBudgetAmountPreset(5000000)">5 Jt</button>
+              <button type="button" class="btn-preset-pill" onclick="window.epokApp.setBudgetAmountPreset(10000000)">10 Jt</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('setBudgetModal').classList.remove('show')">Batal</button>
+          <button type="submit" class="btn-primary" id="btnSaveBudgetSubmit">
+            <i data-lucide="check"></i> Simpan Pagu ke Database
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MOBILE BOTTOM NAVIGATION BAR (Sticky for Mobile & Tablet)
+       ==================================================================== -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <button type="button" class="bottom-nav-item active" data-nav-target="dashboard" aria-label="Beranda">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Beranda</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-nav-target="transactions" aria-label="Transaksi">
+      <i data-lucide="receipt"></i>
+      <span>Transaksi</span>
+    </button>
+    <button type="button" class="bottom-nav-action-btn" id="btnBottomAddTx" onclick="document.getElementById('btnOpenAddTxModal').click()" aria-label="Catat Transaksi Baru">
+      <i data-lucide="plus"></i>
+    </button>
+    <button type="button" class="bottom-nav-item" data-nav-target="budget" aria-label="Pagu">
+      <i data-lucide="pie-chart"></i>
+      <span>Pagu</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-nav-target="family" aria-label="Keluarga">
+      <i data-lucide="users"></i>
+      <span>Keluarga</span>
+    </button>
+  </nav>
+
+  <!-- ====================================================================
+       LIVE TOAST CONTAINER (NOTIFICATIONS POPUP)
+       ==================================================================== -->
+  <div class="toast-container" id="liveToastContainer"></div>
+
+  <!-- Application Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/pivot.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

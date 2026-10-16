@@ -1,0 +1,27 @@
+{
+  "name": "epokkita-family-finance-dashboard",
+  "version": "1.0.0",
+  "description": "Dashboard Keuangan Keluarga Modern EPOKKITA",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "finance",
+    "dashboard",
+    "family",
+    "epokkita",
+    "pivot-table",
+    "charts"
+  ],
+  "author": "EPOKKITA Team",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "pg": "^8.23.1"
+  }
+}
