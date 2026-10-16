@@ -925,6 +925,56 @@
             <label for="editMemberRoleTitle">Jabatan / Posisi dalam Keluarga</label>
             <input type="text" class="form-control" id="editMemberRoleTitle" required placeholder="Contoh: Anak Pertama (Kuliah), Anak Bungsu (SMP), dll.">
             <small style="color:var(--text-muted); font-size:0.75rem;">Ganti jabatan untuk anak atau anggota keluarga sesuai jenjang pendidikan atau peran.</small>
+            <div class="role-quick-presets">
+              <span class="role-preset-label">Pilihan Cepat:</span>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('edit', 'anak-laki')">👦 Anak Laki-Laki</button>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('edit', 'anak-perempuan')">👧 Anak Perempuan</button>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('edit', 'ayah')">👨 Ayah</button>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('edit', 'mama')">👩 Mama</button>
+            </div>
+          </div>
+
+          <!-- Avatar Picker untuk Edit Member -->
+          <div class="form-group" style="margin-top: 1rem;">
+            <label style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Foto Profil Karakter</span>
+              <span class="avatar-auto-badge" id="editAvatarAutoBadge"><i data-lucide="sparkles" style="width:12px;height:12px;"></i> Karakter Profil</span>
+            </label>
+            <div class="avatar-picker-grid" id="editAvatarPickerGrid">
+              <div class="avatar-picker-card" data-avatar="avatar-anak-laki" onclick="window.epokApp.selectModalAvatar('edit', 'avatar-anak-laki')">
+                <div class="avatar-picker-preview avatar-anak-laki"></div>
+                <div class="avatar-picker-info">
+                  <strong>Anak Laki-Laki</strong>
+                  <span>Putra / Kakak / Adik</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+              <div class="avatar-picker-card" data-avatar="avatar-anak-perempuan" onclick="window.epokApp.selectModalAvatar('edit', 'avatar-anak-perempuan')">
+                <div class="avatar-picker-preview avatar-anak-perempuan"></div>
+                <div class="avatar-picker-info">
+                  <strong>Anak Perempuan</strong>
+                  <span>Putri / Kakak / Adik</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+              <div class="avatar-picker-card" data-avatar="avatar-ayah" onclick="window.epokApp.selectModalAvatar('edit', 'avatar-ayah')">
+                <div class="avatar-picker-preview avatar-ayah"></div>
+                <div class="avatar-picker-info">
+                  <strong>Ayah</strong>
+                  <span>Kepala Keluarga</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+              <div class="avatar-picker-card" data-avatar="avatar-mama" onclick="window.epokApp.selectModalAvatar('edit', 'avatar-mama')">
+                <div class="avatar-picker-preview avatar-mama"></div>
+                <div class="avatar-picker-info">
+                  <strong>Mama</strong>
+                  <span>Bendahara Keluarga</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+            </div>
+            <input type="hidden" id="editMemberAvatarClass" value="avatar-anak-laki">
           </div>
 
           <div class="form-row">
@@ -1020,7 +1070,57 @@
 
           <div class="form-group">
             <label for="newMemberRoleTitle">Jabatan / Posisi dalam Keluarga</label>
-            <input type="text" class="form-control" id="newMemberRoleTitle" required placeholder="Contoh: Anak Ketiga (SD), Nenek, dll.">
+            <input type="text" class="form-control" id="newMemberRoleTitle" required placeholder="Contoh: Anak Laki-Laki (SD), Anak Perempuan, dll.">
+            <div class="role-quick-presets">
+              <span class="role-preset-label">Pilihan Cepat:</span>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('add', 'anak-laki')">👦 Anak Laki-Laki</button>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('add', 'anak-perempuan')">👧 Anak Perempuan</button>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('add', 'ayah')">👨 Ayah</button>
+              <button type="button" class="btn-role-preset" onclick="window.epokApp.applyRolePreset('add', 'mama')">👩 Mama</button>
+            </div>
+          </div>
+
+          <!-- Avatar Picker untuk Tambah Member -->
+          <div class="form-group" style="margin-top: 1rem;">
+            <label style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Foto Profil Karakter</span>
+              <span class="avatar-auto-badge" id="addAvatarAutoBadge"><i data-lucide="sparkles" style="width:12px;height:12px;"></i> Otomatis Terpilih</span>
+            </label>
+            <div class="avatar-picker-grid" id="addAvatarPickerGrid">
+              <div class="avatar-picker-card selected" data-avatar="avatar-anak-laki" onclick="window.epokApp.selectModalAvatar('add', 'avatar-anak-laki')">
+                <div class="avatar-picker-preview avatar-anak-laki"></div>
+                <div class="avatar-picker-info">
+                  <strong>Anak Laki-Laki</strong>
+                  <span>Putra / Kakak / Adik</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+              <div class="avatar-picker-card" data-avatar="avatar-anak-perempuan" onclick="window.epokApp.selectModalAvatar('add', 'avatar-anak-perempuan')">
+                <div class="avatar-picker-preview avatar-anak-perempuan"></div>
+                <div class="avatar-picker-info">
+                  <strong>Anak Perempuan</strong>
+                  <span>Putri / Kakak / Adik</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+              <div class="avatar-picker-card" data-avatar="avatar-ayah" onclick="window.epokApp.selectModalAvatar('add', 'avatar-ayah')">
+                <div class="avatar-picker-preview avatar-ayah"></div>
+                <div class="avatar-picker-info">
+                  <strong>Ayah</strong>
+                  <span>Kepala Keluarga</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+              <div class="avatar-picker-card" data-avatar="avatar-mama" onclick="window.epokApp.selectModalAvatar('add', 'avatar-mama')">
+                <div class="avatar-picker-preview avatar-mama"></div>
+                <div class="avatar-picker-info">
+                  <strong>Mama</strong>
+                  <span>Bendahara Keluarga</span>
+                </div>
+                <div class="avatar-check-icon"><i data-lucide="check"></i></div>
+              </div>
+            </div>
+            <input type="hidden" id="newMemberAvatarClass" value="avatar-anak-laki">
           </div>
 
           <div class="form-row">

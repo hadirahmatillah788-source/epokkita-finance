@@ -1173,6 +1173,60 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (window.lucide) lucide.createIcons();
     },
 
+    // Pilih Avatar Karakter pada Modal Tambah / Edit
+    selectModalAvatar(modalType, avatarClass) {
+      const containerId = modalType === "add" ? "addAvatarPickerGrid" : "editAvatarPickerGrid";
+      const inputId = modalType === "add" ? "newMemberAvatarClass" : "editMemberAvatarClass";
+      const badgeId = modalType === "add" ? "addAvatarAutoBadge" : "editAvatarAutoBadge";
+
+      const container = document.getElementById(containerId);
+      const input = document.getElementById(inputId);
+      const badge = document.getElementById(badgeId);
+
+      if (input) input.value = avatarClass;
+
+      if (container) {
+        container.querySelectorAll(".avatar-picker-card").forEach(card => {
+          if (card.dataset.avatar === avatarClass) {
+            card.classList.add("selected");
+          } else {
+            card.classList.remove("selected");
+          }
+        });
+      }
+
+      if (badge && modalType === "add") {
+        const labels = {
+          "avatar-anak-laki": "Anak Laki-Laki 👦",
+          "avatar-anak-perempuan": "Anak Perempuan 👧",
+          "avatar-ayah": "Ayah 👨",
+          "avatar-mama": "Mama 👩"
+        };
+        badge.innerHTML = `<i data-lucide="sparkles" style="width:12px;height:12px;"></i> ${labels[avatarClass] || 'Karakter Terpilih'}`;
+        if (window.lucide) lucide.createIcons();
+      }
+    },
+
+    // Tombol Shortcut Pilihan Cepat Role / Jabatan
+    applyRolePreset(modalType, presetKey) {
+      const titleInputId = modalType === "add" ? "newMemberRoleTitle" : "editMemberRoleTitle";
+      const titleInput = document.getElementById(titleInputId);
+
+      if (presetKey === "anak-laki") {
+        if (titleInput) titleInput.value = "Anak Laki-Laki";
+        this.selectModalAvatar(modalType, "avatar-anak-laki");
+      } else if (presetKey === "anak-perempuan") {
+        if (titleInput) titleInput.value = "Anak Perempuan";
+        this.selectModalAvatar(modalType, "avatar-anak-perempuan");
+      } else if (presetKey === "ayah") {
+        if (titleInput) titleInput.value = "Kepala Keluarga";
+        this.selectModalAvatar(modalType, "avatar-ayah");
+      } else if (presetKey === "mama") {
+        if (titleInput) titleInput.value = "Bendahara Keluarga";
+        this.selectModalAvatar(modalType, "avatar-mama");
+      }
+    },
+
     // Buka Modal Edit Anggota & Jabatan Anak
     openEditMemberModal(memberId) {
       const member = window.epokStore.getMembers().find(m => m.id === memberId);
@@ -1184,6 +1238,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("editMemberRoleTitle").value = member.roleTitle;
       document.getElementById("editMemberRole").value = member.role;
       document.getElementById("editMemberMonthlyLimit").value = member.monthlyLimit || 2000000;
+
+      // Normalisasi avatar yang ada ke avatar picker
+      let currentAvatar = member.avatarClass || "avatar-anak-laki";
+      if (currentAvatar === "avatar-ibu") currentAvatar = "avatar-mama";
+      if (currentAvatar === "avatar-anak1") currentAvatar = "avatar-anak-laki";
+      if (currentAvatar === "avatar-anak2") currentAvatar = "avatar-anak-perempuan";
+      this.selectModalAvatar("edit", currentAvatar);
 
       document.getElementById("editMemberModal")?.classList.add("show");
       if (window.lucide) lucide.createIcons();
@@ -1241,6 +1302,30 @@ document.addEventListener("DOMContentLoaded", async () => {
       const closeAdd = document.getElementById("closeAddMemberModal");
       const addForm = document.getElementById("addMemberForm");
 
+      // Deteksi otomatis avatar saat mengetik posisi / jabatan / nama
+      const newRoleTitleInput = document.getElementById("newMemberRoleTitle");
+      const newMemberNameInput = document.getElementById("newMemberName");
+
+      const autoDetectAvatar = () => {
+        const text = `${newRoleTitleInput?.value || ""} ${newMemberNameInput?.value || ""}`.toLowerCase();
+        if (/perempuan|putri|cewek|gadis|adik peremp|kakak peremp|anak peremp/.test(text)) {
+          this.selectModalAvatar("add", "avatar-anak-perempuan");
+        } else if (/laki|putra|cowok|bujang|mas|adik laki|kakak laki|anak laki/.test(text)) {
+          this.selectModalAvatar("add", "avatar-anak-laki");
+        } else if (/ayah|bapak|papa|papi/.test(text)) {
+          this.selectModalAvatar("add", "avatar-ayah");
+        } else if (/mama|ibu|bunda|mami/.test(text)) {
+          this.selectModalAvatar("add", "avatar-mama");
+        }
+      };
+
+      if (newRoleTitleInput) {
+        newRoleTitleInput.addEventListener("input", autoDetectAvatar);
+      }
+      if (newMemberNameInput) {
+        newMemberNameInput.addEventListener("input", autoDetectAvatar);
+      }
+
       if (btnOpenAdd && addModal) {
         btnOpenAdd.addEventListener("click", () => {
           if (!window.epokStore.isPrivilegedAdmin()) {
@@ -1248,6 +1333,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
           }
           addForm?.reset();
+          // Reset default avatar ke Anak Laki-Laki
+          this.selectModalAvatar("add", "avatar-anak-laki");
           addModal.classList.add("show");
           if (window.lucide) lucide.createIcons();
         });
@@ -1265,15 +1352,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         const roleTitle = document.getElementById("newMemberRoleTitle").value.trim();
         const role = document.getElementById("newMemberRole").value;
         const monthlyLimit = Number(document.getElementById("newMemberLimit").value) || 2000000;
+        const avatarClass = document.getElementById("newMemberAvatarClass")?.value || "avatar-anak-laki";
 
         try {
-          await window.epokStore.addMember(name, fullName, role, roleTitle, monthlyLimit);
+          await window.epokStore.addMember(name, fullName, role, roleTitle, monthlyLimit, null, avatarClass);
           addModal.classList.remove("show");
           window.soundFx.playCashRegister();
           this.renderFamilyView();
           this.showToast({
             title: "Anggota Terdaftar di PostgreSQL",
-            message: `${name} (${roleTitle}) telah resmi tersimpan dalam database.`,
+            message: `${name} (${roleTitle}) telah resmi tersimpan dengan foto profil karakter.`,
             type: "income"
           });
         } catch (err) {
@@ -1298,16 +1386,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         const roleTitle = document.getElementById("editMemberRoleTitle").value.trim();
         const role = document.getElementById("editMemberRole").value;
         const monthlyLimit = Number(document.getElementById("editMemberMonthlyLimit").value) || 0;
+        const avatarClass = document.getElementById("editMemberAvatarClass")?.value || "avatar-anak-laki";
 
         try {
-          await window.epokStore.updateMember(id, { name, fullName, roleTitle, role, monthlyLimit });
+          await window.epokStore.updateMember(id, { name, fullName, roleTitle, role, monthlyLimit, avatarClass });
           editModal.classList.remove("show");
           window.soundFx.playCashRegister();
           this.renderFamilyView();
           this.updateActiveUserBadge();
           this.showToast({
             title: "Perubahan Tersimpan di DB",
-            message: `Data ${name} dan jabatan '${roleTitle}' berhasil diperbarui di PostgreSQL.`,
+            message: `Data ${name} dan foto profil karakter berhasil diperbarui di PostgreSQL.`,
             type: "income"
           });
         } catch (err) {

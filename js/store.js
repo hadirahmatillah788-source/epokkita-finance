@@ -227,7 +227,7 @@ class Store {
   }
 
   // Tambah anggota baru ke PostgreSQL
-  async addMember(name, fullName, role = "member", roleTitle = "", monthlyLimit = 2000000, pin = null) {
+  async addMember(name, fullName, role = "member", roleTitle = "", monthlyLimit = 2000000, pin = null, avatarClass = "") {
     const active = this.getActiveUser();
     try {
       const res = await this.authFetch("/api/members", {
@@ -240,6 +240,7 @@ class Store {
           roleTitle,
           monthlyLimit,
           pin,
+          avatarClass,
           requesterId: active.id
         })
       });

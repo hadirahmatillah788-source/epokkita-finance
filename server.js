@@ -259,7 +259,7 @@ const server = http.createServer(async (req, res) => {
     // 3. POST /api/members - Tambah anggota keluarga baru
     if (pathname === "/api/members" && method === "POST") {
       const body = await getRequestBody(req);
-      const { name, fullName, role = "member", roleTitle, monthlyLimit = 2000000, pin = null, requesterId } = body;
+      const { name, fullName, role = "member", roleTitle, monthlyLimit = 2000000, pin = null, requesterId, avatarClass } = body;
 
       // Check authority: Kepala Keluarga (admin) OR Bendahara (co-admin)
       const requester = await pool.query("SELECT role FROM family_members WHERE id = $1", [requesterId]);
@@ -268,9 +268,23 @@ const server = http.createServer(async (req, res) => {
       }
 
       const id = "mem_" + Date.now();
-      const avatars = ["avatar-ayah", "avatar-ibu", "avatar-anak1", "avatar-anak2"];
-      const currentCount = await pool.query("SELECT COUNT(*) FROM family_members");
-      const avatarClass = avatars[parseInt(currentCount.rows[0].count, 10) % avatars.length];
+
+      // Deteksi avatar otomatis berdasarkan gender & posisi jika belum dipilih eksplisit
+      let assignedAvatar = avatarClass;
+      if (!assignedAvatar) {
+        const textToCheck = `${roleTitle || ''} ${name || ''} ${fullName || ''}`.toLowerCase();
+        if (/perempuan|putri|cewek|gadis|adik peremp|kakak peremp|anak peremp/.test(textToCheck)) {
+          assignedAvatar = "avatar-anak-perempuan";
+        } else if (/laki|putra|cowok|bujang|mas|adik laki|kakak laki|anak laki/.test(textToCheck)) {
+          assignedAvatar = "avatar-anak-laki";
+        } else if (/ayah|bapak|papa|papi/.test(textToCheck)) {
+          assignedAvatar = "avatar-ayah";
+        } else if (/mama|ibu|bunda|mami/.test(textToCheck)) {
+          assignedAvatar = "avatar-mama";
+        } else {
+          assignedAvatar = "avatar-anak-laki";
+        }
+      }
 
       let defaultTitle = roleTitle;
       if (!defaultTitle) {
@@ -282,7 +296,7 @@ const server = http.createServer(async (req, res) => {
       const insertRes = await pool.query(
         `INSERT INTO family_members (id, name, full_name, role, role_title, avatar_class, color, monthly_limit, pin)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-        [id, name, fullName || name, role, defaultTitle, avatarClass, "#059669", monthlyLimit, pin || null]
+        [id, name, fullName || name, role, defaultTitle, assignedAvatar, "#059669", monthlyLimit, pin || null]
       );
 
       // Notifikasi otomatis ke database
@@ -299,7 +313,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname.startsWith("/api/members/") && !pathname.endsWith("/pin") && !pathname.endsWith("/limit") && method === "PUT") {
       const memberId = pathname.replace("/api/members/", "");
       const body = await getRequestBody(req);
-      const { name, fullName, role, roleTitle, monthlyLimit, requesterId } = body;
+      const { name, fullName, role, roleTitle, monthlyLimit, requesterId, avatarClass } = body;
 
       // Check authority: Kepala Keluarga OR Bendahara
       const requester = await pool.query("SELECT role, name FROM family_members WHERE id = $1", [requesterId]);
@@ -319,9 +333,10 @@ const server = http.createServer(async (req, res) => {
              role = COALESCE($3, role),
              role_title = COALESCE($4, role_title),
              monthly_limit = COALESCE($5, monthly_limit),
+             avatar_class = COALESCE($6, avatar_class),
              updated_at = NOW()
-         WHERE id = $6 RETURNING *`,
-        [name, fullName, role, roleTitle, monthlyLimit, memberId]
+         WHERE id = $7 RETURNING *`,
+        [name, fullName, role, roleTitle, monthlyLimit, avatarClass || null, memberId]
       );
 
       // Catat notifikasi perubahan ke database

@@ -3,7 +3,7 @@
  * Mendukung instalasi aplikasi standalone di handphone (Android/iOS)
  */
 
-const CACHE_NAME = "epokkita-cache-v1";
+const CACHE_NAME = "epokkita-cache-v2";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -17,7 +17,11 @@ const STATIC_ASSETS = [
   "/assets/apple-touch-icon.png",
   "/assets/favicon.png",
   "/assets/favicon-64.png",
-  "/assets/logo-circle.png"
+  "/assets/logo-circle.png",
+  "/assets/avatars/avatar-ayah.png",
+  "/assets/avatars/avatar-mama.png",
+  "/assets/avatars/avatar-anak-laki.png",
+  "/assets/avatars/avatar-anak-perempuan.png"
 ];
 
 // 1. Install Event: Cache app shell

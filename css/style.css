@@ -275,20 +275,72 @@ button, input, select, textarea {
   position: relative;
 }
 
-.user-avatar.avatar-ayah {
-  background: linear-gradient(135deg, #0284c7, #0369a1);
+/* Profil Foto Ilustrasi Keluarga */
+.user-avatar.avatar-ayah,
+.auth-profile-avatar.avatar-ayah,
+.auth-selected-avatar.avatar-ayah,
+.avatar-picker-preview.avatar-ayah,
+.avatar-ayah {
+  background-image: url('../assets/avatars/avatar-ayah.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  color: transparent !important;
+  font-size: 0 !important;
 }
 
-.user-avatar.avatar-ibu {
-  background: linear-gradient(135deg, #ec4899, #db2777);
+.user-avatar.avatar-ibu,
+.user-avatar.avatar-mama,
+.auth-profile-avatar.avatar-ibu,
+.auth-profile-avatar.avatar-mama,
+.auth-selected-avatar.avatar-ibu,
+.auth-selected-avatar.avatar-mama,
+.avatar-picker-preview.avatar-ibu,
+.avatar-picker-preview.avatar-mama,
+.avatar-ibu,
+.avatar-mama {
+  background-image: url('../assets/avatars/avatar-mama.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  color: transparent !important;
+  font-size: 0 !important;
 }
 
-.user-avatar.avatar-anak1 {
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+.user-avatar.avatar-anak1,
+.user-avatar.avatar-anak-laki,
+.auth-profile-avatar.avatar-anak1,
+.auth-profile-avatar.avatar-anak-laki,
+.auth-selected-avatar.avatar-anak1,
+.auth-selected-avatar.avatar-anak-laki,
+.avatar-picker-preview.avatar-anak1,
+.avatar-picker-preview.avatar-anak-laki,
+.avatar-anak1,
+.avatar-anak-laki {
+  background-image: url('../assets/avatars/avatar-anak-laki.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  color: transparent !important;
+  font-size: 0 !important;
 }
 
-.user-avatar.avatar-anak2 {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+.user-avatar.avatar-anak2,
+.user-avatar.avatar-anak-perempuan,
+.auth-profile-avatar.avatar-anak2,
+.auth-profile-avatar.avatar-anak-perempuan,
+.auth-selected-avatar.avatar-anak2,
+.auth-selected-avatar.avatar-anak-perempuan,
+.avatar-picker-preview.avatar-anak2,
+.avatar-picker-preview.avatar-anak-perempuan,
+.avatar-anak2,
+.avatar-anak-perempuan {
+  background-image: url('../assets/avatars/avatar-anak-perempuan.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  color: transparent !important;
+  font-size: 0 !important;
 }
 
 .user-status-dot {
@@ -3802,3 +3854,162 @@ button, input, select, textarea {
     display: none !important;
   }
 }
+
+/* ====================================================================
+   AVATAR PICKER IN MODALS (ADD & EDIT FAMILY MEMBERS)
+   ==================================================================== */
+.avatar-auto-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  animation: pulse-badge 2s infinite ease-in-out;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+[data-theme="dark"] .avatar-auto-badge {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.role-quick-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+.role-preset-label {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.btn-role-preset {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 0.22rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-role-preset:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: var(--primary-500);
+  color: var(--primary-600);
+  transform: translateY(-1px);
+}
+
+.avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+}
+
+@media (max-width: 480px) {
+  .avatar-picker-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.avatar-picker-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.avatar-picker-card:hover {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: rgba(37, 99, 235, 0.02);
+  transform: translateY(-1px);
+}
+
+.avatar-picker-card.selected {
+  border-color: var(--primary-500) !important;
+  background: rgba(37, 99, 235, 0.07) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+}
+
+[data-theme="dark"] .avatar-picker-card.selected {
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35) !important;
+}
+
+.avatar-picker-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.avatar-picker-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.avatar-picker-info strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.avatar-picker-info span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+  margin-top: 0.15rem;
+}
+
+.avatar-check-icon {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  color: #ffffff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.avatar-check-icon svg,
+.avatar-check-icon i {
+  width: 13px;
+  height: 13px;
+}
+
+.avatar-picker-card.selected .avatar-check-icon {
+  display: flex;
+}
+
