@@ -21,6 +21,97 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- ====================================================================
+       FAMILY SECURITY AUTH GATE (Layar Kunci & Keamanan Keluarga)
+       ==================================================================== -->
+  <div id="familyAuthGate" class="family-auth-gate" style="display: none;">
+    <div class="auth-gate-backdrop"></div>
+    <div class="auth-gate-container">
+      <div class="auth-gate-header">
+        <div class="auth-brand-badge">
+          <i data-lucide="shield-check"></i>
+          <span>Akses Privat Keluarga</span>
+        </div>
+        <h2 class="auth-title">EPOKKITA Family Finance</h2>
+        <p class="auth-subtitle">Pilih profil keluarga Anda dan masukkan PIN untuk membuka catatan keuangan pribadi & keluarga.</p>
+      </div>
+
+      <div class="auth-profiles-section">
+        <label class="auth-section-label">Pilih Profil Anda:</label>
+        <div class="auth-profiles-grid" id="authProfilesGrid">
+          <div class="auth-profile-loading">
+            <span class="auth-spinner"></span>
+            <span>Memuat profil keluarga...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form PIN & Konfirmasi Masuk -->
+      <form id="authLoginForm" class="auth-login-form">
+        <input type="hidden" id="authSelectedMemberId" value="">
+        
+        <div class="auth-selected-info" id="authSelectedInfo" style="display: none;">
+          <div class="auth-selected-avatar" id="authSelectedAvatar">A</div>
+          <div class="auth-selected-text">
+            <strong id="authSelectedName">Ayah</strong>
+            <span id="authSelectedRole">Kepala Keluarga</span>
+          </div>
+        </div>
+
+        <div class="auth-pin-group" id="authPinGroup" style="display: none;">
+          <label for="authPinInput" class="auth-label">
+            <span>Masukkan PIN Keamanan</span>
+            <span class="auth-pin-hint" id="authPinHint">(4-6 digit angka)</span>
+          </label>
+          <div class="auth-pin-input-wrapper">
+            <i data-lucide="key-round" class="auth-input-icon"></i>
+            <input 
+              type="password" 
+              id="authPinInput" 
+              class="auth-pin-input" 
+              placeholder="Ketik PIN..." 
+              maxlength="10" 
+              inputmode="numeric"
+              autocomplete="current-password"
+            >
+            <button type="button" class="auth-toggle-pwd" id="authTogglePinBtn" title="Lihat PIN">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="auth-no-pin-notice" id="authNoPinNotice" style="display: none;">
+          <i data-lucide="check-circle-2"></i>
+          <span>Profil ini dapat diakses langsung tanpa PIN. Klik tombol di bawah untuk membuka dashboard.</span>
+        </div>
+
+        <div class="auth-remember-row">
+          <label class="auth-checkbox-label">
+            <input type="checkbox" id="authRememberMe" checked>
+            <span>Ingat saya di perangkat ini (30 Hari)</span>
+          </label>
+        </div>
+
+        <div class="auth-error-alert" id="authErrorAlert" style="display: none;">
+          <i data-lucide="alert-triangle"></i>
+          <span id="authErrorText">PIN yang dimasukkan tidak sesuai. Silakan coba lagi.</span>
+        </div>
+
+        <button type="submit" class="auth-submit-btn" id="authSubmitBtn" disabled>
+          <i data-lucide="lock"></i>
+          <span id="authSubmitBtnText">Pilih Profil Terlebih Dahulu</span>
+        </button>
+      </form>
+
+      <div class="auth-gate-footer">
+        <div class="auth-security-info">
+          <i data-lucide="database"></i>
+          <span>Terkoneksi PostgreSQL &bull; Sesi token terenkripsi &bull; Khusus keluarga</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="app-layout">
     <!-- ====================================================================
          Sidebar Navigation
@@ -83,6 +174,10 @@
             <i data-lucide="arrow-left-right" style="width: 16px; height: 16px;"></i>
           </button>
         </div>
+        <button class="sidebar-lock-btn" id="btnLockAppSidebar" title="Kunci Layar & Selesai">
+          <i data-lucide="lock"></i>
+          <span>Kunci Dashboard</span>
+        </button>
       </div>
     </aside>
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
@@ -132,6 +227,11 @@
           <!-- Theme Toggle -->
           <button class="icon-button" id="themeToggleBtn" title="Ganti Tema Gelap/Terang" aria-label="Toggle Theme">
             <i data-lucide="moon"></i>
+          </button>
+
+          <!-- Lock / Logout Button -->
+          <button class="icon-button btn-lock-dashboard" id="btnLockAppHeader" title="Kunci Dashboard (Keluar)" aria-label="Kunci Dashboard">
+            <i data-lucide="lock"></i>
           </button>
 
           <!-- Primary CTA: Add Transaction -->

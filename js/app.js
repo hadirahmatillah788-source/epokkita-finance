@@ -13,9 +13,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const app = {
     currentView: "dashboard",
     editingTxId: null,
+    cachedAuthProfiles: [],
 
     async init() {
       this.initTheme();
+      this.bindAuthGate();
       this.bindNavigation();
       this.bindUserSwitching();
       this.bindNotificationPanel();
@@ -25,6 +27,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       this.bindTransactionFilters();
       this.bindNotificationEvents();
       this.bindSetBudgetModal();
+
+      // Cek apakah browser memiliki token sesi otentikasi aktif
+      if (!window.epokStore.isAuthenticated()) {
+        this.showAuthGate();
+        return;
+      }
+
+      this.hideAuthGate();
 
       // Inisialisasi data dari PostgreSQL
       await window.epokStore.initAsync();
@@ -40,6 +50,248 @@ document.addEventListener("DOMContentLoaded", async () => {
         this.updateNotificationBadge();
         this.renderCurrentView();
       });
+    },
+
+    // --- FAMILY AUTH GATE CONTROLLER ---
+    bindAuthGate() {
+      const form = document.getElementById("authLoginForm");
+      const togglePinBtn = document.getElementById("authTogglePinBtn");
+      const pinInput = document.getElementById("authPinInput");
+      const btnLockSidebar = document.getElementById("btnLockAppSidebar");
+      const btnLockHeader = document.getElementById("btnLockAppHeader");
+
+      if (form) {
+        form.addEventListener("submit", (e) => this.handleAuthSubmit(e));
+      }
+
+      if (togglePinBtn && pinInput) {
+        togglePinBtn.addEventListener("click", () => {
+          const isPwd = pinInput.getAttribute("type") === "password";
+          pinInput.setAttribute("type", isPwd ? "text" : "password");
+          togglePinBtn.innerHTML = `<i data-lucide="${isPwd ? 'eye-off' : 'eye'}"></i>`;
+          if (window.lucide) lucide.createIcons();
+        });
+      }
+
+      const handleLock = async () => {
+        await window.epokStore.logout();
+        this.showAuthGate();
+      };
+
+      if (btnLockSidebar) btnLockSidebar.addEventListener("click", handleLock);
+      if (btnLockHeader) btnLockHeader.addEventListener("click", handleLock);
+
+      window.addEventListener("epokkita-auth-required", () => {
+        this.showAuthGate();
+      });
+
+      window.addEventListener("epokkita-auth-success", async () => {
+        this.hideAuthGate();
+        await window.epokStore.initAsync();
+        this.updateDbStatusBadge();
+        this.updateActiveUserBadge();
+        this.updateNotificationBadge();
+        this.renderCurrentView();
+      });
+    },
+
+    showAuthGate() {
+      const gate = document.getElementById("familyAuthGate");
+      const appLayout = document.querySelector(".app-layout");
+      if (gate) gate.style.display = "flex";
+      if (appLayout) appLayout.style.display = "none";
+      this.loadAuthGateProfiles();
+    },
+
+    hideAuthGate() {
+      const gate = document.getElementById("familyAuthGate");
+      const appLayout = document.querySelector(".app-layout");
+      if (gate) gate.style.display = "none";
+      if (appLayout) appLayout.style.display = "flex";
+    },
+
+    async loadAuthGateProfiles() {
+      const grid = document.getElementById("authProfilesGrid");
+      if (!grid) return;
+
+      grid.innerHTML = `
+        <div class="auth-profile-loading">
+          <span class="auth-spinner"></span>
+          <span>Memuat profil keluarga...</span>
+        </div>
+      `;
+
+      try {
+        const profiles = await window.epokStore.fetchAuthProfiles();
+        this.cachedAuthProfiles = profiles;
+        this.renderAuthProfiles(profiles);
+      } catch (err) {
+        console.error("Gagal memuat profil keluarga:", err);
+        grid.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; color: var(--danger); padding: 1.5rem;">
+            <p>Gagal memuat profil keluarga dari server.</p>
+            <button class="btn-primary" style="margin-top: 0.5rem;" onclick="window.epokApp.loadAuthGateProfiles()">Coba Lagi</button>
+          </div>
+        `;
+      }
+    },
+
+    renderAuthProfiles(profiles) {
+      const grid = document.getElementById("authProfilesGrid");
+      if (!grid) return;
+
+      if (!profiles || profiles.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Tidak ada profil ditemukan</div>`;
+        return;
+      }
+
+      let html = "";
+      profiles.forEach(p => {
+        const initial = (p.name || "U").charAt(0).toUpperCase();
+        html += `
+          <div class="auth-profile-card" data-id="${p.id}" onclick="window.epokApp.selectAuthProfile('${p.id}')">
+            ${p.hasPin ? '<div class="auth-profile-pin-badge" title="Dilindungi PIN"><i data-lucide="lock"></i></div>' : ''}
+            <div class="auth-profile-avatar ${p.avatarClass || 'avatar-ayah'}">${initial}</div>
+            <div class="auth-profile-name">${p.name}</div>
+            <div class="auth-profile-role">${p.roleTitle || 'Anggota'}</div>
+          </div>
+        `;
+      });
+
+      grid.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+
+      // Reset form state
+      const hiddenInput = document.getElementById("authSelectedMemberId");
+      if (hiddenInput) hiddenInput.value = "";
+      const selectedInfo = document.getElementById("authSelectedInfo");
+      if (selectedInfo) selectedInfo.style.display = "none";
+      const pinGroup = document.getElementById("authPinGroup");
+      if (pinGroup) pinGroup.style.display = "none";
+      const noPinNotice = document.getElementById("authNoPinNotice");
+      if (noPinNotice) noPinNotice.style.display = "none";
+      const errAlert = document.getElementById("authErrorAlert");
+      if (errAlert) errAlert.style.display = "none";
+      const submitBtn = document.getElementById("authSubmitBtn");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        document.getElementById("authSubmitBtnText").textContent = "Pilih Profil Terlebih Dahulu";
+      }
+
+      // Auto-select Kepala Keluarga (Ayah) atau profil pertama
+      if (profiles.length > 0) {
+        const defaultProfile = profiles.find(p => p.role === "admin") || profiles[0];
+        this.selectAuthProfile(defaultProfile.id);
+      }
+    },
+
+    selectAuthProfile(memberId) {
+      const profile = (this.cachedAuthProfiles || []).find(p => p.id === memberId);
+      if (!profile) return;
+
+      // Update selected cards
+      document.querySelectorAll(".auth-profile-card").forEach(c => {
+        if (c.getAttribute("data-id") === memberId) {
+          c.classList.add("selected");
+        } else {
+          c.classList.remove("selected");
+        }
+      });
+
+      // Update hidden input
+      const hiddenInput = document.getElementById("authSelectedMemberId");
+      if (hiddenInput) hiddenInput.value = memberId;
+
+      // Update preview
+      const selectedInfo = document.getElementById("authSelectedInfo");
+      const selectedAvatar = document.getElementById("authSelectedAvatar");
+      const selectedName = document.getElementById("authSelectedName");
+      const selectedRole = document.getElementById("authSelectedRole");
+
+      if (selectedInfo) selectedInfo.style.display = "flex";
+      if (selectedAvatar) {
+        selectedAvatar.className = `auth-selected-avatar ${profile.avatarClass || 'avatar-ayah'}`;
+        selectedAvatar.textContent = (profile.name || "U").charAt(0).toUpperCase();
+      }
+      if (selectedName) selectedName.textContent = profile.fullName || profile.name;
+      if (selectedRole) selectedRole.textContent = profile.roleTitle || "Anggota Keluarga";
+
+      // Toggle PIN vs Direct Login
+      const pinGroup = document.getElementById("authPinGroup");
+      const noPinNotice = document.getElementById("authNoPinNotice");
+      const pinInput = document.getElementById("authPinInput");
+      const submitBtn = document.getElementById("authSubmitBtn");
+      const submitBtnText = document.getElementById("authSubmitBtnText");
+      const errAlert = document.getElementById("authErrorAlert");
+      if (errAlert) errAlert.style.display = "none";
+
+      if (profile.hasPin) {
+        if (pinGroup) pinGroup.style.display = "flex";
+        if (noPinNotice) noPinNotice.style.display = "none";
+        if (submitBtnText) submitBtnText.textContent = `Buka Dashboard ${profile.name}`;
+        if (pinInput) {
+          pinInput.value = "";
+          setTimeout(() => pinInput.focus(), 100);
+        }
+      } else {
+        if (pinGroup) pinGroup.style.display = "none";
+        if (noPinNotice) noPinNotice.style.display = "flex";
+        if (submitBtnText) submitBtnText.textContent = `Masuk Langsung sebagai ${profile.name} 🚀`;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+      }
+    },
+
+    async handleAuthSubmit(e) {
+      e.preventDefault();
+      const memberId = document.getElementById("authSelectedMemberId")?.value;
+      const pinInput = document.getElementById("authPinInput");
+      const pin = pinInput ? pinInput.value.trim() : "";
+      const rememberMe = document.getElementById("authRememberMe")?.checked ?? true;
+      const errAlert = document.getElementById("authErrorAlert");
+      const errText = document.getElementById("authErrorText");
+      const submitBtn = document.getElementById("authSubmitBtn");
+      const submitBtnText = document.getElementById("authSubmitBtnText");
+
+      if (!memberId) {
+        if (errAlert && errText) {
+          errText.textContent = "Silakan pilih salah satu profil keluarga!";
+          errAlert.style.display = "flex";
+        }
+        return;
+      }
+
+      const originalBtnText = submitBtnText?.textContent || "Masuk";
+      if (submitBtn) submitBtn.disabled = true;
+      if (submitBtnText) submitBtnText.textContent = "Memverifikasi...";
+
+      try {
+        const res = await window.epokStore.login(memberId, pin, rememberMe);
+        if (res.success) {
+          if (errAlert) errAlert.style.display = "none";
+          window.dispatchEvent(new CustomEvent("epokkita-auth-success"));
+        } else {
+          if (errAlert && errText) {
+            errText.textContent = res.message || "PIN yang Anda masukkan tidak sesuai!";
+            errAlert.style.display = "flex";
+          }
+          if (pinInput) {
+            pinInput.value = "";
+            pinInput.focus();
+          }
+          if (submitBtn) submitBtn.disabled = false;
+          if (submitBtnText) submitBtnText.textContent = originalBtnText;
+        }
+      } catch (err) {
+        if (errAlert && errText) {
+          errText.textContent = err.message || "Terjadi kendala saat verifikasi. Coba lagi.";
+          errAlert.style.display = "flex";
+        }
+        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtnText) submitBtnText.textContent = originalBtnText;
+      }
     },
 
     updateDbStatusBadge() {

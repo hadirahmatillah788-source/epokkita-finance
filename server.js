@@ -5,11 +5,31 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { pool, initDatabase } = require("./db/db");
 require("dotenv").config();
 
 const PORT = process.env.PORT || 3030;
 const BASE_DIR = __dirname;
+
+// In-Memory Active Sessions (Token -> Session Info)
+const ACTIVE_SESSIONS = new Map();
+
+function getAuthenticatedUser(req) {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+
+  const session = ACTIVE_SESSIONS.get(token);
+  if (!session) return null;
+
+  if (Date.now() > session.expiresAt) {
+    ACTIVE_SESSIONS.delete(token);
+    return null;
+  }
+
+  return session;
+}
 
 const MIME_TYPES = {
   ".html": "text/html",
@@ -125,6 +145,108 @@ const server = http.createServer(async (req, res) => {
       } finally {
         client.release();
       }
+    }
+
+    // 0a. GET /api/auth/profiles - Daftar profil untuk Layar Kunci Login Keluarga
+    if (pathname === "/api/auth/profiles" && method === "GET") {
+      const result = await pool.query(
+        "SELECT id, name, full_name, role, role_title, avatar_class, color, (pin IS NOT NULL AND pin != '') as has_pin FROM family_members ORDER BY role = 'admin' DESC, role = 'co-admin' DESC, created_at ASC"
+      );
+      return sendJSON(res, 200, result.rows.map(r => ({
+        id: r.id,
+        name: r.name,
+        fullName: r.full_name || r.name,
+        role: r.role,
+        roleTitle: r.role_title,
+        avatarClass: r.avatar_class,
+        color: r.color,
+        hasPin: r.has_pin
+      })));
+    }
+
+    // 0b. POST /api/auth/login - Login dengan PIN Profil Keluarga
+    if (pathname === "/api/auth/login" && method === "POST") {
+      const body = await getRequestBody(req);
+      const { memberId, pin } = body;
+
+      if (!memberId) {
+        return sendJSON(res, 400, { success: false, message: "ID anggota keluarga harus dipilih." });
+      }
+
+      const memberRes = await pool.query("SELECT * FROM family_members WHERE id = $1", [memberId]);
+      if (memberRes.rows.length === 0) {
+        return sendJSON(res, 404, { success: false, message: "Profil anggota keluarga tidak ditemukan." });
+      }
+
+      const member = memberRes.rows[0];
+
+      // Verifikasi PIN jika profil telah diset PIN
+      if (member.pin && member.pin.trim() !== "") {
+        if (!pin || pin.trim() !== member.pin.trim()) {
+          return sendJSON(res, 401, { success: false, message: "PIN keamanan yang Anda masukkan salah!" });
+        }
+      }
+
+      // Buat token sesi aman (30 hari aktif)
+      const token = "epok_" + crypto.randomBytes(32).toString("hex");
+      const sessionData = {
+        memberId: member.id,
+        name: member.name,
+        fullName: member.full_name || member.name,
+        role: member.role,
+        roleTitle: member.role_title,
+        avatarClass: member.avatar_class,
+        color: member.color,
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
+      };
+
+      ACTIVE_SESSIONS.set(token, sessionData);
+
+      // Catat notifikasi login ke database PostgreSQL
+      await pool.query(
+        `INSERT INTO notifications (id, title, message, type)
+         VALUES ($1, $2, $3, $4)`,
+        ["notif_" + Date.now(), "Sesi Masuk Berhasil", `${member.name} (${member.role_title}) berhasil membuka kunci dashboard.`, "info"]
+      );
+
+      return sendJSON(res, 200, {
+        success: true,
+        token,
+        user: formatMemberRow(member)
+      });
+    }
+
+    // 0c. GET /api/auth/verify - Cek validitas sesi saat browser reload
+    if (pathname === "/api/auth/verify" && method === "GET") {
+      const authUser = getAuthenticatedUser(req);
+      if (!authUser) {
+        return sendJSON(res, 401, { success: false, message: "Sesi telah kedaluwarsa atau belum login." });
+      }
+      return sendJSON(res, 200, { success: true, user: authUser });
+    }
+
+    // 0d. POST /api/auth/logout - Kunci dashboard & hapus sesi
+    if (pathname === "/api/auth/logout" && method === "POST") {
+      const authHeader = req.headers["authorization"] || "";
+      const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+      if (token) {
+        ACTIVE_SESSIONS.delete(token);
+      }
+      return sendJSON(res, 200, { success: true, message: "Dashboard berhasil dikunci kembali." });
+    }
+
+    // -------------------------------------------------------------
+    // GATEWAY PROTEKSI AKSES KELUARGA (PROTECTED ENDPOINTS)
+    // -------------------------------------------------------------
+    if (pathname.startsWith("/api/")) {
+      const authUser = getAuthenticatedUser(req);
+      if (!authUser) {
+        return sendJSON(res, 401, {
+          success: false,
+          message: "Akses Ditolak: Halaman ini khusus keluarga. Silakan masukkan PIN profil Anda terlebih dahulu."
+        });
+      }
+      req.authUser = authUser;
     }
 
     // 2. GET /api/members - Ambil semua anggota keluarga

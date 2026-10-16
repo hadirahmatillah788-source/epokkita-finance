@@ -6,6 +6,7 @@
 const STORAGE_KEYS = {
   ACTIVE_USER: "epokkita_active_user_v1",
   THEME: "epokkita_theme_v1",
+  AUTH_TOKEN: "epokkita_auth_token_v1",
   MEMBERS_CACHE: "epokkita_members_cache",
   TX_CACHE: "epokkita_tx_cache",
   NOTIF_CACHE: "epokkita_notif_cache"
@@ -21,10 +22,104 @@ class Store {
     this.dbStatus = { connected: false, database: "epokkita_db" };
   }
 
+  // --- TOKEN & AUTHENTICATION MANAGEMENT ---
+  getAuthToken() {
+    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) || 
+           sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) || 
+           null;
+  }
+
+  setAuthToken(token, remember = true) {
+    if (remember) {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+      sessionStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    } else {
+      sessionStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    }
+  }
+
+  clearAuthToken() {
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_USER);
+  }
+
+  isAuthenticated() {
+    return !!this.getAuthToken();
+  }
+
+  async authFetch(url, options = {}) {
+    const headers = options.headers ? { ...options.headers } : {};
+    const token = this.getAuthToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    try {
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401) {
+        console.warn("Sesi telah habis atau belum login, mengarahkan ke Layar Kunci Keluarga...");
+        this.clearAuthToken();
+        window.dispatchEvent(new CustomEvent("epokkita-auth-required"));
+      }
+      return res;
+    } catch (err) {
+      console.warn("authFetch network error:", err);
+      throw err;
+    }
+  }
+
+  // Ambil daftar profil publik untuk tampilan Layar Kunci Login
+  async fetchAuthProfiles() {
+    try {
+      const res = await fetch("/api/auth/profiles");
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn("Gagal mengambil profil login publik", e);
+    }
+    return [];
+  }
+
+  // Login dengan PIN anggota keluarga
+  async login(memberId, pin, remember = true) {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId, pin })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || "PIN yang Anda masukkan salah!");
+    }
+
+    this.setAuthToken(data.token, remember);
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(data.user));
+
+    // Sinkronkan seluruh data aplikasi setelah otentikasi berhasil
+    await this.initAsync();
+    window.dispatchEvent(new CustomEvent("epokkita-auth-success", { detail: data.user }));
+    return data;
+  }
+
+  // Logout / Kunci Dashboard
+  async logout() {
+    try {
+      await this.authFetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.warn("Logout request failed", e);
+    }
+    this.clearAuthToken();
+    window.dispatchEvent(new CustomEvent("epokkita-auth-required"));
+  }
+
   // Inisialisasi awal sinkronisasi data dari PostgreSQL
   async initAsync() {
     try {
-      // 1. Cek status koneksi DB
+      // 1. Cek status koneksi DB publik
       const statusRes = await fetch("/api/status");
       if (statusRes.ok) {
         this.dbStatus = await statusRes.json();
@@ -35,7 +130,25 @@ class Store {
       this.isOnline = false;
     }
 
-    // 2. Fetch data parallel dari PostgreSQL
+    // 2. Proteksi Keamanan: Jika belum login, munculkan Layar Kunci Keluarga
+    if (!this.isAuthenticated()) {
+      window.dispatchEvent(new CustomEvent("epokkita-auth-required"));
+      return;
+    }
+
+    try {
+      // Verifikasi token aktif ke server
+      const verifyRes = await this.authFetch("/api/auth/verify");
+      if (!verifyRes || !verifyRes.ok) {
+        this.clearAuthToken();
+        window.dispatchEvent(new CustomEvent("epokkita-auth-required"));
+        return;
+      }
+    } catch {
+      // Jika offline, izinkan fallback cache
+    }
+
+    // 3. Fetch data parallel dari PostgreSQL dengan token otentikasi
     await Promise.all([
       this.fetchMembers(),
       this.fetchTransactions(),
@@ -43,7 +156,7 @@ class Store {
       this.fetchCategories()
     ]);
 
-    // 3. Pastikan active user terset
+    // 4. Pastikan active user terset
     const savedActiveUser = this.getActiveUser();
     if (!savedActiveUser || !this.members.some(m => m.id === savedActiveUser.id)) {
       if (this.members.length > 0) {
@@ -57,7 +170,7 @@ class Store {
   // --- MEMBER & AUTH ---
   async fetchMembers() {
     try {
-      const res = await fetch("/api/members");
+      const res = await this.authFetch("/api/members");
       if (res.ok) {
         this.members = await res.json();
         localStorage.setItem(STORAGE_KEYS.MEMBERS_CACHE, JSON.stringify(this.members));
@@ -117,7 +230,7 @@ class Store {
   async addMember(name, fullName, role = "member", roleTitle = "", monthlyLimit = 2000000, pin = null) {
     const active = this.getActiveUser();
     try {
-      const res = await fetch("/api/members", {
+      const res = await this.authFetch("/api/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,7 +262,7 @@ class Store {
   async updateMember(memberId, updateData) {
     const active = this.getActiveUser();
     try {
-      const res = await fetch(`/api/members/${memberId}`, {
+      const res = await this.authFetch(`/api/members/${memberId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -182,7 +295,7 @@ class Store {
   async updatePin(memberId, currentPin, newPin) {
     const active = this.getActiveUser();
     try {
-      const res = await fetch(`/api/members/${memberId}/pin`, {
+      const res = await this.authFetch(`/api/members/${memberId}/pin`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -210,7 +323,7 @@ class Store {
   async deleteMember(memberId) {
     const active = this.getActiveUser();
     try {
-      const res = await fetch(`/api/members/${memberId}?requesterId=${active.id}`, {
+      const res = await this.authFetch(`/api/members/${memberId}?requesterId=${active.id}`, {
         method: "DELETE"
       });
 
@@ -240,7 +353,7 @@ class Store {
   // --- TRANSACTIONS ---
   async fetchTransactions() {
     try {
-      const res = await fetch("/api/transactions");
+      const res = await this.authFetch("/api/transactions");
       if (res.ok) {
         this.transactions = await res.json();
         localStorage.setItem(STORAGE_KEYS.TX_CACHE, JSON.stringify(this.transactions));
@@ -279,7 +392,7 @@ class Store {
     };
 
     try {
-      const res = await fetch("/api/transactions", {
+      const res = await this.authFetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -322,7 +435,7 @@ class Store {
   async deleteTransaction(txId) {
     const active = this.getActiveUser();
     try {
-      const res = await fetch(`/api/transactions/${txId}?requesterId=${active.id}`, {
+      const res = await this.authFetch(`/api/transactions/${txId}?requesterId=${active.id}`, {
         method: "DELETE"
       });
 
@@ -343,7 +456,7 @@ class Store {
   async deleteAllTransactions() {
     const active = this.getActiveUser();
     try {
-      const res = await fetch(`/api/transactions/all?requesterId=${active.id}`, {
+      const res = await this.authFetch(`/api/transactions/all?requesterId=${active.id}`, {
         method: "DELETE"
       });
 
@@ -384,7 +497,7 @@ class Store {
   // --- NOTIFICATIONS ---
   async fetchNotifications() {
     try {
-      const res = await fetch("/api/notifications");
+      const res = await this.authFetch("/api/notifications");
       if (res.ok) {
         this.notifications = await res.json();
         localStorage.setItem(STORAGE_KEYS.NOTIF_CACHE, JSON.stringify(this.notifications));
@@ -407,7 +520,7 @@ class Store {
 
   async markAllNotificationsRead() {
     try {
-      await fetch("/api/notifications/read", { method: "PUT" });
+      await this.authFetch("/api/notifications/read", { method: "PUT" });
       this.notifications = this.notifications.map(n => ({ ...n, read: true }));
       localStorage.setItem(STORAGE_KEYS.NOTIF_CACHE, JSON.stringify(this.notifications));
     } catch (e) {
@@ -417,7 +530,7 @@ class Store {
 
   async clearNotifications() {
     try {
-      await fetch("/api/notifications", { method: "DELETE" });
+      await this.authFetch("/api/notifications", { method: "DELETE" });
       this.notifications = [];
       localStorage.setItem(STORAGE_KEYS.NOTIF_CACHE, JSON.stringify([]));
     } catch (e) {
@@ -428,7 +541,7 @@ class Store {
   // --- CATEGORIES & BUDGET ---
   async fetchCategories() {
     try {
-      const res = await fetch("/api/categories");
+      const res = await this.authFetch("/api/categories");
       if (res.ok) {
         this.categories = await res.json();
         return this.categories;
@@ -456,7 +569,7 @@ class Store {
 
   async updateCategoryBudget(categoryId, newBudget) {
     const activeUser = this.getActiveUser();
-    const res = await fetch(`/api/categories/${categoryId}/budget`, {
+    const res = await this.authFetch(`/api/categories/${categoryId}/budget`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -477,7 +590,7 @@ class Store {
 
   async updateMemberLimit(memberId, newLimit) {
     const activeUser = this.getActiveUser();
-    const res = await fetch(`/api/members/${memberId}/limit`, {
+    const res = await this.authFetch(`/api/members/${memberId}/limit`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
