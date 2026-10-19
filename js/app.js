@@ -1971,10 +1971,43 @@ document.addEventListener("DOMContentLoaded", async () => {
       toggleExpense?.addEventListener("click", () => setType("expense"));
       toggleIncome?.addEventListener("click", () => setType("income"));
 
+      // Kunci tanggal agar tidak bisa memilih hari esok atau masa depan
+      const dateInput = document.getElementById("txDateInput");
+      if (dateInput) {
+        const todayStr = this.getTodayDateString();
+        dateInput.max = todayStr;
+        if (!dateInput.value || dateInput.value > todayStr) {
+          dateInput.value = todayStr;
+        }
+
+        dateInput.addEventListener("change", () => {
+          const maxDate = this.getTodayDateString();
+          if (dateInput.value > maxDate) {
+            alert("Pilihan tanggal untuk hari esok atau masa depan terkunci! Anda hanya dapat memilih hari sekarang atau tanggal sebelumnya.");
+            dateInput.value = maxDate;
+          }
+        });
+
+        dateInput.addEventListener("input", () => {
+          const maxDate = this.getTodayDateString();
+          if (dateInput.value > maxDate) {
+            dateInput.value = maxDate;
+          }
+        });
+      }
+
       form?.addEventListener("submit", (e) => {
         e.preventDefault();
         this.submitTransactionForm(false);
       });
+    },
+
+    getTodayDateString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     },
 
     resetTransactionForm() {
@@ -1982,7 +2015,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (form) form.reset();
 
       const dateInput = document.getElementById("txDateInput");
-      if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+      if (dateInput) {
+        const todayStr = this.getTodayDateString();
+        dateInput.max = todayStr;
+        dateInput.value = todayStr;
+      }
 
       const memberSelect = document.getElementById("txMemberSelect");
       if (memberSelect) {
@@ -2052,6 +2089,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!description) {
         alert("Mohon masukkan keterangan atau nama transaksi!");
+        return;
+      }
+
+      // Validasi tanggal transaksi tidak boleh melebihi hari ini
+      const todayStr = this.getTodayDateString();
+      if (!date) {
+        alert("Mohon tentukan tanggal transaksi!");
+        return;
+      }
+      if (date > todayStr) {
+        alert("Pilihan tanggal untuk hari esok atau masa depan terkunci! Anda hanya dapat memilih hari sekarang atau sebelumnya.");
+        const dateInput = document.getElementById("txDateInput");
+        if (dateInput) {
+          dateInput.value = todayStr;
+          dateInput.focus();
+        }
         return;
       }
 

@@ -499,6 +499,16 @@ const server = http.createServer(async (req, res) => {
       const txDate = date || new Date().toISOString().slice(0, 10);
       const catName = categoryName || category;
 
+      // Validasi tanggal: hari esok / masa depan dikunci (Toleransi zona waktu Indonesia WIB/UTC+7)
+      const nowWIB = new Date(Date.now() + 7 * 3600 * 1000);
+      const todayStr = nowWIB.toISOString().slice(0, 10);
+      if (txDate > todayStr) {
+        return sendJSON(res, 400, {
+          success: false,
+          message: "Tanggal transaksi tidak boleh melebihi hari ini. Hanya dapat memilih hari sekarang atau sebelumnya."
+        });
+      }
+
       // Proteksi Server-side Pencegahan Double Input (30 detik)
       if (!body.allowDuplicate) {
         const recentDup = await pool.query(
