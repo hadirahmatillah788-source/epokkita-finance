@@ -1818,15 +1818,16 @@ button, input, select, textarea {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: 200;
+  z-index: 10000;
   display: none;
   align-items: center;
   justify-content: center;
   padding: 1rem;
   animation: modalFadeIn 0.2s ease;
+  overscroll-behavior: contain;
 }
 
 .modal-overlay.show {
@@ -1839,14 +1840,25 @@ button, input, select, textarea {
 }
 
 .modal-dialog {
+  display: flex;
+  flex-direction: column;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 540px;
+  max-height: min(90vh, 90dvh);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
   animation: modalSlideUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-dialog > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @keyframes modalSlideUp {
@@ -1855,6 +1867,7 @@ button, input, select, textarea {
 }
 
 .modal-header {
+  flex-shrink: 0;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -1887,9 +1900,12 @@ button, input, select, textarea {
 }
 
 .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 1.5rem;
-  max-height: 75vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .form-group {
@@ -1966,6 +1982,7 @@ button, input, select, textarea {
 }
 
 .modal-footer {
+  flex-shrink: 0;
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-color);
   background-color: var(--border-light);
@@ -2011,7 +2028,7 @@ button, input, select, textarea {
   position: fixed;
   top: 1.5rem;
   right: 1.5rem;
-  z-index: 300;
+  z-index: 10050;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -2859,6 +2876,30 @@ button, input, select, textarea {
   .mobile-bottom-nav {
     display: flex !important;
   }
+  /* Sembunyikan bottom nav saat modal terbuka agar tidak menutupi tombol simpan */
+  body:has(.modal-overlay.show) .mobile-bottom-nav,
+  body.modal-open .mobile-bottom-nav {
+    transform: translateY(120%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+  body:has(.modal-overlay.show) .pwa-install-banner,
+  body.modal-open .pwa-install-banner {
+    display: none !important;
+  }
+  body:has(.modal-overlay.show),
+  body.modal-open {
+    overflow: hidden !important;
+  }
+  .modal-overlay {
+    padding: 0.75rem 0.65rem;
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+  }
+  .modal-dialog {
+    max-height: min(92vh, calc(100dvh - 1.5rem));
+  }
   .content-body {
     padding: 0.85rem 0.85rem calc(80px + env(safe-area-inset-bottom, 16px));
     width: 100%;
@@ -3272,13 +3313,17 @@ button, input, select, textarea {
   /* Modals Mobile Adaptation */
   .modal-overlay {
     padding: 0.5rem;
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+    align-items: center;
   }
   .modal-dialog {
     max-width: 100%;
-    width: calc(100% - 0.5rem);
-    max-height: 92vh;
+    width: 100%;
+    max-height: min(94vh, calc(100dvh - 1rem));
     margin: auto;
     border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   }
   .modal-header {
     padding: 0.85rem 1rem;
@@ -3287,17 +3332,35 @@ button, input, select, textarea {
     font-size: 1rem;
   }
   .modal-body {
-    padding: 0.85rem;
-    max-height: calc(92vh - 120px);
+    padding: 0.9rem 0.85rem;
   }
   .modal-footer {
     padding: 0.75rem 1rem;
-    flex-direction: column-reverse;
-    gap: 0.5rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: stretch;
+    gap: 0.65rem;
+    background-color: var(--border-light);
+    border-top: 1px solid var(--border-color);
   }
   .modal-footer button {
+    height: 44px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .modal-footer button:only-child {
+    flex: 1;
     width: 100%;
-    height: 40px;
+  }
+  .modal-footer .btn-secondary {
+    flex: 1;
+    min-width: 80px;
+  }
+  .modal-footer .btn-primary {
+    flex: 2;
   }
   .form-row {
     grid-template-columns: 1fr !important;
@@ -4275,6 +4338,7 @@ button, input, select, textarea {
     align-items: center;
     justify-content: space-around;
     padding: 0 0.5rem;
+    transition: transform 0.25s ease, opacity 0.2s ease, visibility 0.25s;
   }
 
   .bottom-nav-item {

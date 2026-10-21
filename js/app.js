@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       this.bindTransactionFilters();
       this.bindNotificationEvents();
       this.bindSetBudgetModal();
+      this.bindModalStateObserver();
 
       // Cek apakah browser memiliki token sesi otentikasi aktif
       if (!window.epokStore.isAuthenticated()) {
@@ -1817,6 +1818,38 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         });
       }
+    },
+
+    bindModalStateObserver() {
+      const syncModalState = () => {
+        const isAnyModalOpen = !!document.querySelector(".modal-overlay.show");
+        document.body.classList.toggle("modal-open", isAnyModalOpen);
+      };
+
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.type === "attributes" && m.attributeName === "class") {
+            const target = m.target;
+            if (target && target.classList && target.classList.contains("modal-overlay")) {
+              syncModalState();
+              break;
+            }
+          }
+        }
+      });
+      observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["class"] });
+
+      // Run initial check
+      syncModalState();
+
+      // Close on Escape key
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const openModals = document.querySelectorAll(".modal-overlay.show");
+          openModals.forEach(m => m.classList.remove("show"));
+          syncModalState();
+        }
+      });
     },
 
     // --- USER SWITCHING & PROFILE ---
